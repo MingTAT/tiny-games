@@ -2,9 +2,14 @@
 
 Small games, visual experiments, and interactive ideas.
 
-This repository is where I keep compact projects that are small enough to finish, understand, and change without turning into large software products.
+This repository is a collection of compact projects that are small enough to finish, understand, and change, but still have enough character to be worth keeping.
 
-The projects do not have to follow the same language, framework, or format. Some are terminal games, some are visual experiments, and some are closer to small interactive works.
+The projects do not need to share the same language, framework, genre, or visual style.
+
+Some are games.  
+Some are simulations.  
+Some are visual experiments.  
+Some are closer to small interactive works.
 
 ## Projects
 
@@ -12,7 +17,7 @@ The projects do not have to follow the same language, framework, or format. Some
 
 A terminal game about tracking a moving target through noisy information.
 
-You scan rooms, receive imperfect signals, and decide when the probability is high enough to make a move.
+You scan rooms, receive imperfect signals, and decide when the probability is high enough to act.
 
 Behind the game is a simple Bayesian belief system that continuously updates where the ghost is most likely to be.
 
@@ -34,7 +39,7 @@ Enter a number and see several different structures hidden inside it:
 - digital root
 - Collatz trajectory
 
-The idea is not just to calculate a number, but to give it a visual form.
+The goal is not only to calculate a number, but to give it a visual form.
 
 ```bash
 cd number-atlas
@@ -47,20 +52,37 @@ python number_atlas.py
 
 An atmospheric investigation game set at the night desk of an old hotel.
 
-Four guests appear in the register. One of them never arrived.
+Four guests appear in the register.
 
-Instead of relying on complicated game logic, this project focuses more on:
+One of them never arrived.
 
-- visual composition
-- object placement
+The player inspects objects on the desk, collects physical evidence, and decides which name does not belong.
+
+This project focuses less on difficult algorithms and more on:
+
+- spatial composition
 - atmosphere
-- evidence presentation
+- typography
+- object placement
 - narrative pacing
+- evidence presentation
 - interaction design
 
-The player investigates objects on the desk, collects evidence, and makes a final conclusion.
+The game currently supports:
 
-The game supports both English and Chinese, with language switching directly inside the interface.
+```text
+EN   中文   日本語
+```
+
+Language can be switched during the game without resetting progress.
+
+The three versions are not intended to be mechanically identical translations.
+
+English keeps a more direct detective tone.
+
+Chinese is slightly more concise and reads more like a case file.
+
+Japanese uses vocabulary and phrasing that better fit the atmosphere of an old hotel, including words such as `宿直`, `帳場`, `宿帳`, and `投宿`.
 
 Open:
 
@@ -68,7 +90,7 @@ Open:
 the-last-check-in/index.html
 ```
 
-No server or installation is required.
+No installation or server is required.
 
 ## Repository structure
 
@@ -88,14 +110,42 @@ tiny-games/
     └── README.md
 ```
 
+## A note on language
+
+Multilingual support in this repository does not have to mean simple translation.
+
+Different languages have different rhythms, levels of formality, cultural associations, visual textures, and ways of hiding or revealing information.
+
+A future project may use those differences deliberately.
+
+The same scene may feel different in English, Chinese, and Japanese.
+
+A clue may be phrased differently.
+
+A joke may need to become a different joke.
+
+A piece of dialogue may become more distant, more intimate, more ambiguous, or more formal depending on the language.
+
+In some games, language itself may even become part of the mechanic.
+
+The goal is not:
+
+> translate everything into as many languages as possible
+
+but rather:
+
+> let each language contribute something of its own.
+
 ## About this repository
 
-The projects here are intentionally different from one another.
+I do not want `tiny-games` to become a collection of the same program rewritten with different names.
 
-I do not want this repository to become a collection of the same idea rewritten with different names.
+Each project should try something different.
 
 A project may begin with probability, numbers, language, history, visual design, storytelling, simulation, or something harder to classify.
 
-The common requirement is simple:
+Different programming languages and tools are also welcome when they make sense for the idea.
 
-**it should be small enough to make, but interesting enough to keep.**
+The only real rule is:
+
+**small enough to make, interesting enough to keep.**
