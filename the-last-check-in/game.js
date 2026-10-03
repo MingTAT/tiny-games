@@ -21,6 +21,28 @@ const COPY = {
     correct:{kicker:'CASE CLOSED',title:'Elias Vale never checked in.',body:'The room key never left the board. Room 214 was closed. The porter counted only three arrivals. The photograph confirms those three. The final register line was added after the fact—by someone expecting Elias tomorrow. At 02:19 the phone rings again. This time, no one speaks.'},
     wrong:{kicker:'UNRESOLVED',title:'The evidence does not hold.',body:'That guest is supported by the physical record: a missing key, the porter\'s count, or the lobby photograph. Something about your conclusion is wrong. The desk clock advances to 02:18.'}
   },
+  ja: {
+    lang: 'ja', title: '最後のチェックイン', dateLine: '宿直帳場 / 10月3日 / 02:17', window: '東棟',
+    briefingMain: '今夜の宿帳には、四人の名がある。02:12、帳場の電話が鳴った。受話器の向こうの声は、ただ一言――「この中に、今夜ここへ来ていない人がいる」。',
+    briefingSub: '帳場に残された物を調べ、証拠を書き留める。そして、今夜の宿帳にいるはずのない客を見つける。',
+    soundOff: '音：切', soundOn: '音：入', restart: '最初から', caseLabel: '調査記録', evidenceHeading: '証拠',
+    empty: 'まだ何も記録されていない。', conclude: '結論を出す', need: n => `あと ${n} 件の証拠が必要。`,
+    canConclude: '結論を出せる。残りを調べてもいい。', allFound: 'すべての証拠を確認した。', finalLabel: '最終判断',
+    accuseTitle: '今夜、ここへ来なかったのは誰か。', accuseHint: '一人を選ぶ。確信がなければ、まだ調査に戻れる。', endingBtn: '帳場へ戻る',
+    objectLabels: {register:'宿帳',keys:'客室の鍵',note:'宿直係の走り書き',paper:'夕刊',letter:'未受取の手紙',photo:'ロビーの写真'},
+    notePreview: '到着は三名。<br>東棟は閉鎖。', paperName: '港湾新報', paperHeadline: '配管破裂　ホテル東棟を閉鎖', stamp: '郵',
+    rooms: {hana:'203号室 · 21:40',leon:'108号室 · 22:15',clara:'206号室 · 23:05',elias:'214号室 · 00:20'},
+    evidence: {
+      register:{kicker:'証拠 01 / 宿帳',title:'夜間宿帳',body:'21:40から00:20までに、四つの記名がある。最初の三行は筆圧も字の揺れもまちまちだが、最後の一行だけが妙に整っている。',observation:'宿帳に名があることは、「誰かがその名を書いた」ことしか証明しない。本人が玄関をくぐった証拠ではない。',clueTitle:'四人の名、異質な一行',clueText:'Elias Vale の記名だけ、前の三人と筆跡の気配が違う。',visual:`<div class="doc-register"><div class="row"><strong>Hana Mori</strong><span>203</span><span>21:40</span></div><div class="row"><strong>Leon Bell</strong><span>108</span><span>22:15</span></div><div class="row"><strong>Clara Weiss</strong><span>206</span><span>23:05</span></div><div class="row"><strong>Elias Vale</strong><span>214</span><span>00:20</span></div></div>`},
+      keys:{kicker:'証拠 02 / 鍵',title:'客室の鍵掛け',body:'108、203、206の鉤は空いている。鍵は客に渡ったらしい。だが214の真鍮鍵だけは、まだ元の場所に掛かったままだ。',observation:'Elias Vale が214号室へ投宿したのなら、なぜ鍵は一度も持ち出されていないのか。',clueTitle:'214号室の鍵が残っている',clueText:'108、203、206は空。214だけが鍵掛けに残っている。',visual:`<div class="key-visual"><div class="key-tag missing">108<br><small>空の鉤</small></div><div class="key-tag missing">203<br><small>空の鉤</small></div><div class="key-tag missing">206<br><small>空の鉤</small></div><div class="key-tag">214<br><small>鍵あり</small></div></div>`},
+      note:{kicker:'証拠 03 / 走り書き',title:'宿直係のメモ',body:'00:45、宿直係が帳場を離れる前に残した走り書き。',observation:'「遅い到着は三名」とある。さらに、東棟の鍵を渡すな、と念を押している。',clueTitle:'到着は三人だけ',clueText:'00:45までに宿直係が確認した到着客は三名。',visual:`<div class="note-visual">23:58 —— やかん、まだ故障。<br>遅い到着、計三名。<br>東棟は引き続き閉鎖。あちらの鍵は渡さないこと。<br>—— M.</div>`},
+      paper:{kicker:'証拠 04 / 新聞',title:'『港湾新報』',body:'昨日の地元紙。ホテル内の配管破裂を報じ、修理が終わるまで210号室から218号室を使用停止とすると伝えている。',observation:'214号室は、閉鎖された区画のただ中にある。',clueTitle:'214号室は閉鎖中',clueText:'210〜218号室は、今夜より前から使用停止になっていた。',visual:`<div class="paper-visual"><h3>港湾新報</h3><p><strong>配管破裂　ホテル東棟を閉鎖</strong></p><p>ホテル側は、二階配管の損傷により210号室から218号室までを金曜午前まで使用停止とする、と発表した。</p></div>`},
+      letter:{kicker:'証拠 05 / 手紙',title:'受取人の来ない手紙',body:'封筒の宛名は Elias Vale。該当する宿泊客が現れなかったため、手紙は帳場に戻されたままになっている。',observation:'本文には「金曜日、ここで会おう」とある。今夜はまだ木曜日だ。',clueTitle:'Elias の到着予定は明日',clueText:'手紙によれば、Elias Vale が来るのは金曜日のはずだった。',visual:`<div class="letter-visual">Eliasへ。<br><br>予約は確認した。金曜日で変わりない。六時を過ぎたらロビーで待っている。<br><br>早く来ないほうがいい。東棟はいま、ひどい有様だ。<br><br>—— S.</div>`},
+      photo:{kicker:'証拠 06 / 写真',title:'ロビーの写真',body:'使い捨てカメラの一枚。時刻は00:32。遅れて着いた三人――赤いスカーフの女、見本鞄を提げた男、ヴァイオリンケースを抱えた女――が写っている。',observation:'宿帳の備考と照らすと、Hana Mori、Leon Bell、Clara Weiss の三人に一致する。四人目の姿はない。',clueTitle:'ロビーにいたのは三人',clueText:'00:32の写真には、Elias以外の三名が確認できる。',visual:`<div class="photo-visual"><span class="guest g1"></span><span class="guest g2"></span><span class="guest g3"></span></div>`}
+    },
+    correct:{kicker:'調査終了',title:'Elias Vale は、今夜ここへ来ていない。',body:'214号室の鍵は一度も外されていない。部屋そのものも閉鎖中だった。宿直係が数えた到着は三人。00:32の写真にも、その三人しか写っていない。最後の記名は後から足されたものだ――おそらく、Elias が来る日を一日取り違えた誰かによって。02:19。電話がもう一度鳴る。今度は、受話器の向こうに何の声もない。'},
+    wrong:{kicker:'未解決',title:'その結論では、証拠がつながらない。',body:'その客には、持ち出された鍵、宿直係の記録、あるいはロビー写真という現実の痕跡がある。まだ説明できていない一点が残っている。帳場の時計が、02:18へ進む。'}
+  },
   zh: {
     lang: 'zh-CN', title: '最后一次入住', dateLine: '夜班前台 / 10月3日 / 02:17', window: '东翼',
     briefingMain: '今晚的入住登记簿上写着四个名字。02:12，前台电话响了。电话那头只说了一句：“他们之中，有一个人今晚根本没有来。”',
@@ -84,11 +106,13 @@ function applyLanguage(nextLocale){
   locale = nextLocale;
   const c=t();
   document.documentElement.lang=c.lang;
-  document.title = locale==='zh' ? '最后一次入住 · The Last Check-In' : 'The Last Check-In';
+  document.title = locale==='zh' ? '最后一次入住 · The Last Check-In' : locale==='ja' ? '最後のチェックイン · The Last Check-In' : 'The Last Check-In';
   $('langEn').classList.toggle('active', locale==='en');
   $('langZh').classList.toggle('active', locale==='zh');
+  $('langJa').classList.toggle('active', locale==='ja');
   $('langEn').setAttribute('aria-pressed', String(locale==='en'));
   $('langZh').setAttribute('aria-pressed', String(locale==='zh'));
+  $('langJa').setAttribute('aria-pressed', String(locale==='ja'));
   $('dateLine').textContent=c.dateLine; $('gameTitle').textContent=c.title;
   $('briefingMain').textContent=c.briefingMain; $('briefingSub').textContent=c.briefingSub;
   $('windowCopy').textContent=c.window; $('soundBtn').textContent=soundIsOn()?c.soundOn:c.soundOff; $('resetBtn').textContent=c.restart;
@@ -97,9 +121,10 @@ function applyLanguage(nextLocale){
   $('notePreview').innerHTML=c.notePreview; $('paperName').textContent=c.paperName; $('paperHeadline').textContent=c.paperHeadline; $('stampText').textContent=c.stamp;
   document.querySelectorAll('[data-object-label]').forEach(el=>el.textContent=c.objectLabels[el.dataset.objectLabel]);
   document.querySelectorAll('[data-room]').forEach(el=>el.textContent=c.rooms[el.dataset.room]);
-  $('scene').setAttribute('aria-label', locale==='zh'?'旅馆夜班前台':'Hotel night desk');
-  $('closeOverlay').setAttribute('aria-label', locale==='zh'?'关闭':'Close');
-  $('closeAccuse').setAttribute('aria-label', locale==='zh'?'关闭':'Close');
+  const aria = locale==='zh' ? {scene:'旅馆夜班前台',close:'关闭'} : locale==='ja' ? {scene:'ホテルの宿直帳場',close:'閉じる'} : {scene:'Hotel night desk',close:'Close'};
+  $('scene').setAttribute('aria-label', aria.scene);
+  $('closeOverlay').setAttribute('aria-label', aria.close);
+  $('closeAccuse').setAttribute('aria-label', aria.close);
   renderClues();
   if(currentEvidence && !$('overlay').hidden) renderEvidence(currentEvidence);
   if(currentEnding && !$('endingOverlay').hidden) renderEnding(currentEnding);
@@ -145,7 +170,7 @@ document.querySelectorAll('.suspect').forEach(b=>b.addEventListener('click',()=>
 $('closeOverlay').addEventListener('click',closeEvidence); $('closeAccuse').addEventListener('click',closeAccusation); $('accuseBtn').addEventListener('click',openAccuse);
 $('endingBtn').addEventListener('click',()=>{$('endingOverlay').hidden=true;currentEnding=null;document.body.style.overflow=''});
 $('resetBtn').addEventListener('click',resetGame); $('soundBtn').addEventListener('click',toggleSound);
-$('langEn').addEventListener('click',()=>applyLanguage('en')); $('langZh').addEventListener('click',()=>applyLanguage('zh'));
+$('langEn').addEventListener('click',()=>applyLanguage('en')); $('langZh').addEventListener('click',()=>applyLanguage('zh')); $('langJa').addEventListener('click',()=>applyLanguage('ja'));
 $('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeEvidence()}); $('accuseOverlay').addEventListener('click',e=>{if(e.target===$('accuseOverlay'))closeAccusation()});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('endingOverlay').hidden){$('endingOverlay').hidden=true;currentEnding=null;document.body.style.overflow=''}else if(!$('accuseOverlay').hidden)closeAccusation();else if(!$('overlay').hidden)closeEvidence()});
 applyLanguage('en');

@@ -22,3 +22,8 @@
 html[lang="zh-CN"] body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",Arial,sans-serif}
 html[lang="zh-CN"] h1,html[lang="zh-CN"] h2,html[lang="zh-CN"] .handwriting,html[lang="zh-CN"] .suspect strong{font-family:"Songti SC","SimSun",Georgia,serif}
 html[lang="zh-CN"] .object-label,html[lang="zh-CN"] .accuse-btn,html[lang="zh-CN"] .eyebrow{text-transform:none;letter-spacing:.12em}
+
+html[lang="ja"] body{font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+html[lang="ja"] h1,html[lang="ja"] h2,html[lang="ja"] .handwriting,html[lang="ja"] .suspect strong,html[lang="ja"] .letter-visual{font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif}
+html[lang="ja"] .object-label,html[lang="ja"] .accuse-btn,html[lang="ja"] .eyebrow{text-transform:none;letter-spacing:.11em}
+html[lang="ja"] .note-visual{line-height:1.65}
