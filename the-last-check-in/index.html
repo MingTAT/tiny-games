@@ -10,40 +10,47 @@
   <div class="grain"></div><div class="vignette"></div>
   <main class="game-shell">
     <header class="topbar">
-      <div><p class="eyebrow">NIGHT DESK / OCTOBER 3 / 02:17</p><h1>The Last Check-In</h1></div>
-      <div class="top-actions"><button id="soundBtn" class="ghost-btn" type="button">sound: off</button><button id="resetBtn" class="ghost-btn" type="button">restart</button></div>
+      <div><p id="dateLine" class="eyebrow"></p><h1 id="gameTitle"></h1></div>
+      <div class="top-actions">
+        <div class="lang-switch" role="group" aria-label="Language / 语言">
+          <button id="langEn" class="lang-btn active" type="button">EN</button>
+          <button id="langZh" class="lang-btn" type="button">中文</button>
+        </div>
+        <button id="soundBtn" class="ghost-btn" type="button" aria-pressed="false"></button>
+        <button id="resetBtn" class="ghost-btn" type="button"></button>
+      </div>
     </header>
 
     <section class="briefing">
-      <p>Four names appear in tonight's register. At 02:12 the desk phone rang. A voice said: <em>“One of them never arrived.”</em></p>
-      <p class="muted">Inspect the desk. Record the evidence. Then decide which guest does not belong.</p>
+      <p id="briefingMain"></p>
+      <p id="briefingSub" class="muted"></p>
     </section>
 
-    <section class="scene" aria-label="Hotel night desk">
-      <div class="window"><span class="rain rain-a"></span><span class="rain rain-b"></span><span class="window-copy">EAST WING</span></div>
+    <section id="scene" class="scene">
+      <div class="window"><span class="rain rain-a"></span><span class="rain rain-b"></span><span id="windowCopy" class="window-copy"></span></div>
       <div class="lamp"><div class="lamp-shade"></div><div class="lamp-neck"></div><div class="lamp-glow"></div></div>
 
-      <button class="scene-object register" data-evidence="register" type="button"><span class="object-label">guest register</span><span class="book-lines"></span></button>
-      <button class="scene-object keys" data-evidence="keys" type="button"><span class="object-label">key board</span><span class="key-row"><i>108</i><i>203</i><i>206</i><i>214</i></span></button>
-      <button class="scene-object note" data-evidence="note" type="button"><span class="object-label">porter note</span><span class="handwriting">three arrivals.<br>east wing shut.</span></button>
-      <button class="scene-object paper" data-evidence="paper" type="button"><span class="object-label">evening paper</span><strong>THE HARBOR GAZETTE</strong><small>WATER MAIN BURST CLOSES HOTEL WING</small></button>
-      <button class="scene-object letter" data-evidence="letter" type="button"><span class="object-label">sealed letter</span><span class="stamp">POST</span></button>
-      <button class="scene-object photo" data-evidence="photo" type="button"><span class="object-label">lobby photo</span><span class="photo-silhouette one"></span><span class="photo-silhouette two"></span><span class="photo-silhouette three"></span></button>
+      <button class="scene-object register" data-evidence="register" type="button"><span class="object-label" data-object-label="register"></span><span class="book-lines"></span></button>
+      <button class="scene-object keys" data-evidence="keys" type="button"><span class="object-label" data-object-label="keys"></span><span class="key-row"><i>108</i><i>203</i><i>206</i><i>214</i></span></button>
+      <button class="scene-object note" data-evidence="note" type="button"><span class="object-label" data-object-label="note"></span><span id="notePreview" class="handwriting"></span></button>
+      <button class="scene-object paper" data-evidence="paper" type="button"><span class="object-label" data-object-label="paper"></span><strong id="paperName"></strong><small id="paperHeadline"></small></button>
+      <button class="scene-object letter" data-evidence="letter" type="button"><span class="object-label" data-object-label="letter"></span><span id="stampText" class="stamp"></span></button>
+      <button class="scene-object photo" data-evidence="photo" type="button"><span class="object-label" data-object-label="photo"></span><span class="photo-silhouette one"></span><span class="photo-silhouette two"></span><span class="photo-silhouette three"></span></button>
 
-      <div class="desk-clock">02:17</div><div class="desk-edge"></div>
+      <div id="deskClock" class="desk-clock">02:17</div><div class="desk-edge"></div>
     </section>
 
     <aside class="caseboard">
-      <div class="caseboard-head"><div><p class="eyebrow">CASE NOTES</p><h2>Evidence</h2></div><div class="evidence-count"><span id="count">0</span>/6</div></div>
-      <div id="clueList" class="clue-list" aria-live="polite"><p class="empty-state">Nothing recorded yet.</p></div>
-      <button id="accuseBtn" class="accuse-btn" type="button" disabled>make a conclusion</button>
-      <p id="unlockText" class="unlock-text">Find at least 4 pieces of evidence.</p>
+      <div class="caseboard-head"><div><p id="caseLabel" class="eyebrow"></p><h2 id="evidenceHeading"></h2></div><div class="evidence-count"><span id="count">0</span>/6</div></div>
+      <div id="clueList" class="clue-list" aria-live="polite"></div>
+      <button id="accuseBtn" class="accuse-btn" type="button" disabled></button>
+      <p id="unlockText" class="unlock-text"></p>
     </aside>
   </main>
 
   <div id="overlay" class="overlay" hidden>
     <div class="evidence-card" role="dialog" aria-modal="true" aria-labelledby="evidenceTitle">
-      <button id="closeOverlay" class="close-btn" type="button" aria-label="Close">×</button>
+      <button id="closeOverlay" class="close-btn" type="button">×</button>
       <p id="evidenceKicker" class="eyebrow"></p><h2 id="evidenceTitle"></h2>
       <div id="evidenceVisual" class="evidence-visual"></div>
       <p id="evidenceBody" class="evidence-body"></p><p id="evidenceObservation" class="observation"></p>
@@ -52,13 +59,13 @@
 
   <div id="accuseOverlay" class="overlay" hidden>
     <div class="evidence-card accusation-card" role="dialog" aria-modal="true" aria-labelledby="accuseTitle">
-      <button id="closeAccuse" class="close-btn" type="button" aria-label="Close">×</button>
-      <p class="eyebrow">FINAL DECISION</p><h2 id="accuseTitle">Who never arrived?</h2><p class="muted">Choose one name. You can keep investigating if you're not ready.</p>
+      <button id="closeAccuse" class="close-btn" type="button">×</button>
+      <p id="finalLabel" class="eyebrow"></p><h2 id="accuseTitle"></h2><p id="accuseHint" class="muted"></p>
       <div class="suspect-grid">
-        <button class="suspect" data-suspect="hana" type="button"><strong>Hana Mori</strong><span>Room 203 · 21:40</span></button>
-        <button class="suspect" data-suspect="leon" type="button"><strong>Leon Bell</strong><span>Room 108 · 22:15</span></button>
-        <button class="suspect" data-suspect="clara" type="button"><strong>Clara Weiss</strong><span>Room 206 · 23:05</span></button>
-        <button class="suspect" data-suspect="elias" type="button"><strong>Elias Vale</strong><span>Room 214 · 00:20</span></button>
+        <button class="suspect" data-suspect="hana" type="button"><strong>Hana Mori</strong><span data-room="hana"></span></button>
+        <button class="suspect" data-suspect="leon" type="button"><strong>Leon Bell</strong><span data-room="leon"></span></button>
+        <button class="suspect" data-suspect="clara" type="button"><strong>Clara Weiss</strong><span data-room="clara"></span></button>
+        <button class="suspect" data-suspect="elias" type="button"><strong>Elias Vale</strong><span data-room="elias"></span></button>
       </div>
     </div>
   </div>
@@ -66,7 +73,7 @@
   <div id="endingOverlay" class="overlay" hidden>
     <div class="ending-card" role="dialog" aria-modal="true" aria-labelledby="endingTitle">
       <p id="endingKicker" class="eyebrow"></p><h2 id="endingTitle"></h2><p id="endingBody"></p>
-      <button id="endingBtn" class="accuse-btn" type="button">return to the desk</button>
+      <button id="endingBtn" class="accuse-btn" type="button"></button>
     </div>
   </div>
   <script src="game.js"></script>

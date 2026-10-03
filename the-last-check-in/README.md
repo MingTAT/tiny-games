@@ -1,30 +1,25 @@
-# The Last Check-In
+# The Last Check-In / 最后一次入住
 
-A small atmospheric investigation game built around **visual design, spatial storytelling, and evidence presentation** rather than difficult algorithms.
+A small atmospheric investigation game with **English and Chinese in one interface**.
 
-It is 02:17 at the night desk of an old hotel. Four names appear in tonight's register. A phone call tells you:
+一个以空间叙事、证据观察和视觉氛围为核心的单机调查游戏。英文与中文共用同一套游戏文件，可在游戏右上角随时切换。
 
-> One of them never arrived.
+## Play / 运行
 
-Inspect the desk, collect physical evidence, and decide which guest does not belong.
+Open `index.html` in a modern browser.
 
-## Play
+直接双击 `index.html` 即可运行，不需要安装依赖，也不需要服务器。
 
-Open `index.html` in any modern browser.
+## Language switching / 语言切换
 
-No install. No server. No build step.
+Use the `EN / 中文` buttons in the top-right corner.
 
-## What is inside
+- language changes instantly
+- current evidence progress is preserved
+- an open evidence card switches language in place
+- the ending screen can also switch language without restarting
 
-- a designed hotel desk scene
-- six inspectable objects
-- evidence overlays
-- a case-notes panel
-- a final accusation screen
-- multiple endings
-- optional minimal sound
-- responsive layout
-- reduced-motion support
+右上角的 `EN / 中文` 可以在游戏过程中随时切换；已经找到的证据、当前调查进度和结局状态都不会重置。
 
 ## Files
 
@@ -36,6 +31,6 @@ the-last-check-in/
 └── README.md
 ```
 
-## Design note
+Only one copy of the game logic and one visual scene are maintained. All bilingual text lives in the language dictionaries inside `game.js`.
 
-The code is intentionally simple. The complexity lives in composition, atmosphere, typography, object placement, layered information, visual feedback, and narrative pacing.
+游戏逻辑和视觉场景都只有一份；中英文文本集中维护在 `game.js` 的语言字典中。
