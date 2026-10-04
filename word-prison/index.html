@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Word Prison / 字狱</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="kicker">TINY-GAMES / LANGUAGE EXPERIMENT 04</p>
+        <h1>WORD PRISON <span>/ 字狱</span></h1>
+      </div>
+      <div class="header-actions">
+        <button id="soundBtn" class="minor-btn" type="button">SOUND OFF</button>
+        <button id="homeBtn" class="minor-btn" type="button">LANGUAGES</button>
+      </div>
+    </header>
+
+    <section id="menuView" class="view">
+      <div class="intro">
+        <p class="intro-big">语言不是提示。<br><strong>语言就是房间本身。</strong></p>
+        <p class="intro-copy">Choose a language. Each route uses different linguistic rules. They share a story, not the same answers.</p>
+      </div>
+      <div id="languageGrid" class="language-grid"></div>
+      <p class="menu-note">移动、删除、重排、组合。<br>当一句话的意义改变，房间也会跟着改变。</p>
+    </section>
+
+    <section id="gameView" class="view" hidden>
+      <div class="route-head">
+        <div>
+          <p id="routeLabel" class="kicker"></p>
+          <h2 id="roomTitle"></h2>
+        </div>
+        <div class="progress-wrap">
+          <span id="progressText"></span>
+          <div class="progress-track"><i id="progressBar"></i></div>
+        </div>
+      </div>
+
+      <div class="room">
+        <div class="room-wall">
+          <div class="cell-window" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div id="prompt" class="prompt"></div>
+          <div id="stage" class="stage"></div>
+          <div id="message" class="message" aria-live="polite"></div>
+        </div>
+        <aside class="side-panel">
+          <div class="panel-section">
+            <p class="kicker" id="objectiveLabel">OBJECTIVE</p>
+            <p id="objective" class="objective"></p>
+          </div>
+          <div class="panel-section">
+            <p class="kicker" id="hintLabel">HINT</p>
+            <button id="hintBtn" class="hint-btn" type="button">?</button>
+            <p id="hintText" class="hint-text" hidden></p>
+          </div>
+          <div class="panel-section controls">
+            <button id="checkBtn" class="primary-btn" type="button"></button>
+            <button id="resetBtn" class="secondary-btn" type="button"></button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="completeView" class="view complete-view" hidden>
+      <p id="completeKicker" class="kicker"></p>
+      <h2 id="completeTitle"></h2>
+      <p id="completeBody" class="complete-body"></p>
+      <div id="languageFeature" class="language-feature"></div>
+      <button id="nextRouteBtn" class="primary-btn" type="button"></button>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
