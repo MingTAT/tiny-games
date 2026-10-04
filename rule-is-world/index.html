@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rule Is World</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">TINY-GAMES / DAY 01</p>
+        <h1>RULE IS WORLD</h1>
+      </div>
+      <div class="actions">
+        <button id="resetBtn" type="button">Reset</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="game-panel">
+        <div id="board" class="board" aria-label="Rule puzzle board"></div>
+      </div>
+
+      <aside class="sidebar">
+        <section>
+          <p class="eyebrow">ACTIVE RULES</p>
+          <div id="rules" class="rules"></div>
+        </section>
+
+        <section>
+          <p class="eyebrow">CONTROLS</p>
+          <p>Arrow keys / WASD</p>
+          <p>Push words. Change rules. Reach WIN.</p>
+        </section>
+
+        <section>
+          <p class="eyebrow">DAY 01</p>
+          <p class="muted">
+            Core engine only: movement, pushing, rule parsing, STOP, PUSH, YOU and WIN.
+          </p>
+        </section>
+      </aside>
+    </section>
+
+    <div id="winOverlay" class="overlay" hidden>
+      <div class="win-card">
+        <p class="eyebrow">RULE SATISFIED</p>
+        <h2>YOU IS WIN.</h2>
+        <button id="playAgainBtn" type="button">Play again</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
