@@ -1,26 +1,13 @@
 # Rule Is World
 
-A rule-rewriting puzzle game.
+A rule-rewriting puzzle game where words on the board define the physics of the board.
 
-Objects follow rules written directly on the board.
-
-```text
-PLAYER IS YOU
-WALL IS STOP
-ROCK IS PUSH
-FLAG IS WIN
-```
-
-The text blocks are physical objects. Push them and the rules change immediately.
+This project grows one day at a time.
 
 ## Day 01
 
-The first version is intentionally small.
-
-Implemented:
-
 - grid movement
-- pushable text blocks
+- pushable word blocks
 - horizontal and vertical rule parsing
 - `YOU`
 - `STOP`
@@ -29,22 +16,43 @@ Implemented:
 - one playable level
 - live active-rule display
 
-Open:
+## Day 02
+
+New today:
+
+- noun-to-noun transformation rules
+- simple chained transformations
+- undo history
+- `Z` to undo
+- `R` to reset
+- second playable level
+- active rules distinguish properties from transformations
+
+A rule like:
 
 ```text
-index.html
+ROCK IS PLAYER
 ```
+
+now changes every `ROCK` object into a `PLAYER`.
+
+If:
+
+```text
+PLAYER IS YOU
+```
+
+is also active, the transformed objects become controllable immediately.
+
+## Run
+
+Open `index.html` in a modern browser.
 
 No install or server required.
 
-## Files
+## Direction
 
-```text
-rule-is-world/
-├── index.html
-├── style.css
-├── game.js
-└── README.md
-```
+Later systems can include `AND`, multi-target transformation, `MOVE`, `SINK`,
+`DEFEAT`, `OPEN / SHUT`, `HAS`, `MAKE`, richer level packs, and an editor.
 
-This project is meant to grow slowly.
+Small changes, deep combinations.
