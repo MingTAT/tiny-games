@@ -1,388 +1,106 @@
-class RuleWorldEngine {
-  constructor(level) {
-    this.load(level);
+class RuleWorldEngine{
+ constructor(level){this.load(level)}
+ load(level){
+  this.level=JSON.parse(JSON.stringify(level));
+  this.nextId=1;
+  this.entities=this.level.entities.map(e=>({...e,id:`e${this.nextId++}`}));
+  this.rules=[];this.history=[];this.steps=0;this.won=false;this.lost=false;this.ruleChanged=false;
+  this.parseRules();this.initialRules=JSON.stringify(this.rules);
+ }
+ snapshot(){return{entities:JSON.parse(JSON.stringify(this.entities)),steps:this.steps,won:this.won,lost:this.lost,ruleChanged:this.ruleChanged}}
+ restore(s){this.entities=JSON.parse(JSON.stringify(s.entities));this.steps=s.steps;this.won=s.won;this.lost=s.lost;this.ruleChanged=s.ruleChanged;this.parseRules()}
+ save(){this.history.push(this.snapshot());if(this.history.length>300)this.history.shift()}
+ undo(){if(!this.history.length)return false;this.restore(this.history.pop());return true}
+ at(x,y){return this.entities.filter(e=>e.x===x&&e.y===y)}
+ inBounds(x,y){return x>=0&&y>=0&&x<this.level.width&&y<this.level.height}
+ property(noun,prop){return this.rules.some(r=>r.type==="property"&&r.subject===noun&&r.property===prop)}
+ isPush(e){return e.type==="word"||(e.type==="object"&&this.property(e.noun,"PUSH"))}
+ isStop(e){return e.type==="object"&&this.property(e.noun,"STOP")}
+ isYou(e){return e.type==="object"&&this.property(e.noun,"YOU")}
+ isWin(e){return e.type==="object"&&this.property(e.noun,"WIN")}
+
+ parseRules(){
+  const map=new Map();
+  for(const e of this.entities)if(e.type==="word"&&!map.has(`${e.x},${e.y}`))map.set(`${e.x},${e.y}`,e);
+  const lines=[];
+  for(let y=0;y<this.level.height;y++){let a=[];for(let x=0;x<=this.level.width;x++){const w=map.get(`${x},${y}`);if(w)a.push(w);else if(a.length){lines.push(a);a=[]}}}
+  for(let x=0;x<this.level.width;x++){let a=[];for(let y=0;y<=this.level.height;y++){const w=map.get(`${x},${y}`);if(w)a.push(w);else if(a.length){lines.push(a);a=[]}}}
+  let out=[];for(const line of lines)out.push(...this.parseLine(line));
+  const seen=new Set();this.rules=out.filter(r=>{const k=JSON.stringify(r);if(seen.has(k))return false;seen.add(k);return true});
+  if(this.initialRules!==undefined&&JSON.stringify(this.rules)!==this.initialRules)this.ruleChanged=true;
+ }
+ parseLine(t){
+  if(t.length<3)return[];
+  const oi=t.findIndex(x=>x.kind==="op"&&x.word==="IS");if(oi<=0||oi>=t.length-1)return[];
+  const left=this.group(t.slice(0,oi),"noun");if(!left)return[];
+  const right=this.mixed(t.slice(oi+1));if(!right)return[];
+  const out=[];
+  for(const s of left)for(const r of right){
+   if(r.kind==="prop")out.push({type:"property",subject:s,property:r.word});
+   else out.push({type:"transform",subject:s,target:r.word});
   }
-
-  load(level) {
-    this.level = JSON.parse(JSON.stringify(level));
-    this.nextId = 1;
-    this.entities = this.level.entities.map(e => ({...e, id:`e${this.nextId++}`}));
-    this.rules = [];
-    this.history = [];
-    this.steps = 0;
-    this.won = false;
-    this.lost = false;
-    this.settle(false);
+  return out;
+ }
+ group(t,kind){const v=[];for(let i=0;i<t.length;i++){if(i%2===0){if(t[i].kind!==kind)return null;v.push(t[i].word)}else if(t[i].kind!=="and")return null}return v}
+ mixed(t){const v=[];for(let i=0;i<t.length;i++){if(i%2===0){if(!["noun","prop"].includes(t[i].kind))return null;v.push({word:t[i].word,kind:t[i].kind})}else if(t[i].kind!=="and")return null}return v}
+ applyTransforms(){
+  const trs=this.rules.filter(r=>r.type==="transform"&&r.subject!==r.target);let changed=false;
+  const map=new Map();for(const r of trs)if(!map.has(r.subject))map.set(r.subject,r.target);
+  for(const e of this.entities)if(e.type==="object"&&map.has(e.noun)){e.noun=map.get(e.noun);changed=true}
+  return changed
+ }
+ settle(){
+  for(let i=0;i<5;i++){this.parseRules();if(!this.applyTransforms())break}
+  this.parseRules();this.resolve();this.parseRules();this.checkWin();this.checkLoss()
+ }
+ destroy(ids){const s=new Set(ids);this.entities=this.entities.filter(e=>!s.has(e.id))}
+ resolve(){
+  let again=true,guard=0;
+  while(again&&guard++<6){again=false;const kill=new Set(),cells=new Map();
+   for(const e of this.entities){const k=`${e.x},${e.y}`;if(!cells.has(k))cells.set(k,[]);cells.get(k).push(e)}
+   for(const g of cells.values()){
+    const o=g.filter(e=>e.type==="object");if(!o.length)continue;
+    const sinks=o.filter(e=>this.property(e.noun,"SINK"));
+    if(sinks.length&&g.length>sinks.length)g.forEach(e=>kill.add(e.id));
+    const defeats=o.filter(e=>this.property(e.noun,"DEFEAT"));
+    if(defeats.length)o.filter(e=>this.property(e.noun,"YOU")).forEach(e=>kill.add(e.id));
+    const opens=o.filter(e=>this.property(e.noun,"OPEN")),shuts=o.filter(e=>this.property(e.noun,"SHUT"));
+    if(opens.length&&shuts.length){opens.forEach(e=>kill.add(e.id));shuts.forEach(e=>kill.add(e.id))}
+   }
+   if(kill.size){this.destroy([...kill]);again=true}
   }
-
-  snapshot() {
-    return {
-      entities: JSON.parse(JSON.stringify(this.entities)),
-      steps: this.steps,
-      won: this.won,
-      lost: this.lost
-    };
+ }
+ compatibleDestroy(mover,other){
+  return mover.type==="object"&&other.type==="object"&&(
+   (this.property(mover.noun,"OPEN")&&this.property(other.noun,"SHUT"))||
+   (this.property(mover.noun,"SHUT")&&this.property(other.noun,"OPEN"))
+  )
+ }
+ tryMove(e,dx,dy,trail=new Set()){
+  if(trail.has(e.id))return false;trail.add(e.id);
+  const nx=e.x+dx,ny=e.y+dy;if(!this.inBounds(nx,ny))return false;
+  const occ=this.at(nx,ny).filter(o=>o.id!==e.id);
+  for(const o of occ){
+   if(this.compatibleDestroy(e,o))continue;
+   if(this.isPush(o)){if(!this.tryMove(o,dx,dy,trail))return false}
+   else if(this.isStop(o))return false;
   }
-
-  restore(s) {
-    this.entities = JSON.parse(JSON.stringify(s.entities));
-    this.steps = s.steps;
-    this.won = s.won;
-    this.lost = s.lost;
-    this.settle(false);
-  }
-
-  saveHistory() {
-    this.history.push(this.snapshot());
-    if (this.history.length > 300) this.history.shift();
-  }
-
-  undo() {
-    if (!this.history.length) return false;
-    this.restore(this.history.pop());
-    return true;
-  }
-
-  reset() {
-    this.load(this.level);
-  }
-
-  inBounds(x,y) {
-    return x >= 0 && y >= 0 && x < this.level.width && y < this.level.height;
-  }
-
-  at(x,y) {
-    return this.entities.filter(e => e.x === x && e.y === y);
-  }
-
-  property(noun, prop) {
-    return this.rules.some(r => r.type === "property" && r.subject === noun && r.property === prop);
-  }
-
-  hasRule(noun, target) {
-    return this.rules.some(r => r.type === "has" && r.subject === noun && r.target === target);
-  }
-
-  isPush(e) {
-    if (e.type === "word") return true;
-    return this.property(e.noun,"PUSH");
-  }
-
-  isStop(e) {
-    return e.type === "object" && this.property(e.noun,"STOP");
-  }
-
-  isYou(e) {
-    return e.type === "object" && this.property(e.noun,"YOU");
-  }
-
-  isWin(e) {
-    return e.type === "object" && this.property(e.noun,"WIN");
-  }
-
-  parseRules() {
-    const rules = [];
-    const wordMap = new Map();
-
-    for (const e of this.entities) {
-      if (e.type === "word" && !wordMap.has(`${e.x},${e.y}`)) {
-        wordMap.set(`${e.x},${e.y}`, e);
-      }
-    }
-
-    const lines = [];
-
-    for (let y=0; y<this.level.height; y++) {
-      let seg = [];
-      for (let x=0; x<=this.level.width; x++) {
-        const w = wordMap.get(`${x},${y}`);
-        if (w) seg.push(w);
-        else if (seg.length) { lines.push(seg); seg=[]; }
-      }
-    }
-
-    for (let x=0; x<this.level.width; x++) {
-      let seg = [];
-      for (let y=0; y<=this.level.height; y++) {
-        const w = wordMap.get(`${x},${y}`);
-        if (w) seg.push(w);
-        else if (seg.length) { lines.push(seg); seg=[]; }
-      }
-    }
-
-    for (const line of lines) {
-      rules.push(...this.parseLine(line));
-    }
-
-    this.rules = this.dedupe(rules);
-  }
-
-  parseLine(tokens) {
-    const out = [];
-    if (tokens.length < 3) return out;
-
-    const opIndex = tokens.findIndex(t => t.kind === "op" && (t.word === "IS" || t.word === "HAS"));
-    if (opIndex <= 0 || opIndex >= tokens.length-1) return out;
-
-    const op = tokens[opIndex].word;
-    const left = tokens.slice(0,opIndex);
-    const right = tokens.slice(opIndex+1);
-
-    const subjects = this.parseAndGroup(left, "noun");
-    if (!subjects) return out;
-
-    if (op === "HAS") {
-      const targets = this.parseAndGroup(right, "noun");
-      if (!targets) return out;
-      for (const s of subjects) for (const t of targets) out.push({type:"has",subject:s,target:t});
-      return out;
-    }
-
-    const rhs = this.parseMixedAndGroup(right);
-    if (!rhs) return out;
-
-    for (const s of subjects) {
-      for (const item of rhs) {
-        if (item.kind === "prop") out.push({type:"property",subject:s,property:item.word});
-        if (item.kind === "noun") out.push({type:"transform",subject:s,target:item.word});
-      }
-    }
-
-    return out;
-  }
-
-  parseAndGroup(tokens, requiredKind) {
-    if (!tokens.length) return null;
-    const values = [];
-    for (let i=0;i<tokens.length;i++) {
-      const t = tokens[i];
-      if (i % 2 === 0) {
-        if (t.kind !== requiredKind) return null;
-        values.push(t.word);
-      } else {
-        if (t.kind !== "and" || t.word !== "AND") return null;
-      }
-    }
-    return values;
-  }
-
-  parseMixedAndGroup(tokens) {
-    if (!tokens.length) return null;
-    const values = [];
-    for (let i=0;i<tokens.length;i++) {
-      const t = tokens[i];
-      if (i % 2 === 0) {
-        if (t.kind !== "noun" && t.kind !== "prop") return null;
-        values.push({word:t.word,kind:t.kind});
-      } else {
-        if (t.kind !== "and" || t.word !== "AND") return null;
-      }
-    }
-    return values;
-  }
-
-  dedupe(list) {
-    const seen = new Set();
-    return list.filter(r => {
-      const k = JSON.stringify(r);
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-  }
-
-  applyTransforms() {
-    const transforms = this.rules.filter(r => r.type === "transform" && r.subject !== r.target);
-    if (!transforms.length) return false;
-
-    const map = new Map();
-    for (const r of transforms) if (!map.has(r.subject)) map.set(r.subject, r.target);
-
-    let changed = false;
-    for (const e of this.entities) {
-      if (e.type !== "object") continue;
-      const target = map.get(e.noun);
-      if (target && target !== e.noun) {
-        e.noun = target;
-        changed = true;
-      }
-    }
-    return changed;
-  }
-
-  settle(checkWin=true) {
-    for (let i=0;i<6;i++) {
-      this.parseRules();
-      if (!this.applyTransforms()) break;
-    }
-    this.parseRules();
-    this.resolveInteractions();
-    this.parseRules();
-    if (checkWin) this.checkWin();
-  }
-
-  destroy(ids) {
-    const idSet = new Set(ids);
-    const destroyed = this.entities.filter(e => idSet.has(e.id));
-    const survivors = this.entities.filter(e => !idSet.has(e.id));
-
-    const spawned = [];
-    for (const d of destroyed) {
-      if (d.type !== "object") continue;
-      for (const r of this.rules) {
-        if (r.type === "has" && r.subject === d.noun) {
-          spawned.push({
-            id:`e${this.nextId++}`, type:"object", noun:r.target,
-            x:d.x, y:d.y, dir:d.dir || "right"
-          });
-        }
-      }
-    }
-
-    this.entities = survivors.concat(spawned);
-  }
-
-  resolveInteractions() {
-    let changed = true;
-    let guard = 0;
-
-    while (changed && guard++ < 8) {
-      changed = false;
-      const destroyIds = new Set();
-
-      const cells = new Map();
-      for (const e of this.entities) {
-        const k = `${e.x},${e.y}`;
-        if (!cells.has(k)) cells.set(k,[]);
-        cells.get(k).push(e);
-      }
-
-      for (const group of cells.values()) {
-        const objects = group.filter(e => e.type === "object");
-        if (!objects.length) continue;
-
-        const opens = objects.filter(e => this.property(e.noun,"OPEN"));
-        const shuts = objects.filter(e => this.property(e.noun,"SHUT"));
-        if (opens.length && shuts.length) {
-          opens.forEach(e => destroyIds.add(e.id));
-          shuts.forEach(e => destroyIds.add(e.id));
-        }
-
-        const sinks = objects.filter(e => this.property(e.noun,"SINK"));
-        if (sinks.length && group.length > sinks.length) {
-          group.forEach(e => destroyIds.add(e.id));
-        }
-
-        const hots = objects.filter(e => this.property(e.noun,"HOT"));
-        if (hots.length) {
-          objects.filter(e => this.property(e.noun,"MELT")).forEach(e => destroyIds.add(e.id));
-        }
-
-        if (group.length > 1) {
-          objects.filter(e => this.property(e.noun,"WEAK")).forEach(e => destroyIds.add(e.id));
-        }
-
-        const defeats = objects.filter(e => this.property(e.noun,"DEFEAT"));
-        if (defeats.length) {
-          objects.filter(e => this.property(e.noun,"YOU")).forEach(e => destroyIds.add(e.id));
-        }
-      }
-
-      if (destroyIds.size) {
-        this.destroy([...destroyIds]);
-        changed = true;
-        this.parseRules();
-      }
-    }
-  }
-
-  canEnter(entity, nx, ny, dx, dy, trail) {
-    if (!this.inBounds(nx,ny)) return false;
-
-    const occupants = this.at(nx,ny).filter(o => o.id !== entity.id);
-
-    for (const other of occupants) {
-      if (this.isPush(other)) {
-        if (!this.tryMove(other,dx,dy,trail)) return false;
-      } else if (this.isStop(other)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  tryMove(entity, dx, dy, trail=new Set()) {
-    if (trail.has(entity.id)) return false;
-    trail.add(entity.id);
-
-    const nx = entity.x + dx;
-    const ny = entity.y + dy;
-
-    if (!this.canEnter(entity,nx,ny,dx,dy,trail)) return false;
-
-    entity.x = nx;
-    entity.y = ny;
-    return true;
-  }
-
-  movePlayer(dx,dy) {
-    if (this.won || this.lost) return false;
-    const movers = this.entities.filter(e => this.isYou(e));
-    if (!movers.length) return false;
-
-    this.saveHistory();
-
-    for (const e of movers) {
-      this.tryMove(e,dx,dy,new Set());
-    }
-
-    this.steps++;
-    this.settle(false);
-    this.moveAutonomous();
-    this.settle(true);
-    this.checkLoss();
-    return true;
-  }
-
-  moveAutonomous() {
-    const dirs = {
-      up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]
-    };
-    const opposite = {up:"down",down:"up",left:"right",right:"left"};
-
-    const movers = this.entities.filter(e => e.type === "object" && this.property(e.noun,"MOVE"));
-
-    for (const e of movers) {
-      let dirName = e.dir || "right";
-      let [dx,dy] = dirs[dirName];
-      if (!this.tryMove(e,dx,dy,new Set())) {
-        dirName = opposite[dirName];
-        e.dir = dirName;
-        [dx,dy] = dirs[dirName];
-        this.tryMove(e,dx,dy,new Set());
-      } else {
-        e.dir = dirName;
-      }
-    }
-  }
-
-  checkWin() {
-    const yous = this.entities.filter(e => this.isYou(e));
-    const wins = this.entities.filter(e => this.isWin(e));
-    for (const y of yous) {
-      for (const w of wins) {
-        if (y.x === w.x && y.y === w.y) {
-          this.won = true;
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  checkLoss() {
-    if (!this.entities.some(e => this.isYou(e))) {
-      this.lost = true;
-    }
-  }
+  e.x=nx;e.y=ny;return true
+ }
+ move(dx,dy){
+  if(this.won||this.lost)return false;
+  const you=this.entities.filter(e=>this.isYou(e));if(!you.length)return false;
+  this.save();
+  for(const e of you)this.tryMove(e,dx,dy,new Set());
+  this.steps++;this.settle();return true
+ }
+ checkWin(){
+  const ys=this.entities.filter(e=>this.isYou(e)),ws=this.entities.filter(e=>this.isWin(e));
+  for(const y of ys)for(const w of ws)if(y.x===w.x&&y.y===w.y&&this.ruleChanged){this.won=true;return true}
+  return false
+ }
+ checkLoss(){if(!this.entities.some(e=>this.isYou(e))&&!this.won)this.lost=true}
+ serialize(){
+  return this.entities.map(e=>`${e.type}:${e.type==="word"?e.word:e.noun}:${e.x},${e.y}`).sort().join("|")+"#"+JSON.stringify(this.rules);
+ }
 }

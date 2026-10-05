@@ -7,32 +7,37 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="doodle doodle-a" aria-hidden="true">↯</div>
+  <div class="doodle doodle-b" aria-hidden="true">NOPE</div>
+  <div class="doodle doodle-c" aria-hidden="true">?</div>
+
   <main class="app">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">TINY-GAMES / COMPLETE EDITION</p>
-        <h1>RULE IS WORLD</h1>
-        <p class="subtitle">Push the words. Rewrite the world.</p>
+      <div class="title-wrap">
+        <p class="eyebrow">TINY-GAMES / LANGUAGE ACCIDENT NO. 05</p>
+        <h1><span>RULE</span> <b>IS</b> <span>WORLD</span></h1>
+        <p class="subtitle">Please do not feed the grammar after midnight.</p>
       </div>
       <div class="actions">
-        <button id="menuBtn" type="button">Levels</button>
-        <button id="undoBtn" type="button">Undo</button>
-        <button id="resetBtn" type="button">Reset</button>
-        <button id="soundBtn" type="button">Sound off</button>
+        <button id="menuBtn" type="button">levels??</button>
+        <button id="undoBtn" type="button">undo that crime</button>
+        <button id="resetBtn" type="button">panic reset</button>
       </div>
     </header>
 
     <section id="menuView" class="menu-view">
-      <div class="menu-copy">
-        <div>
-          <p class="eyebrow">HOW TO PLAY</p>
-          <h2>The rules are inside the room.</h2>
+      <div class="manifesto">
+        <div class="manifesto-note">
+          <p class="eyebrow">OFFICIAL NOTICE*</p>
+          <h2>Every room is impossible on purpose.</h2>
+          <span class="asterisk">*official status disputed</span>
         </div>
         <p>
-          Words are physical blocks. If <b>WALL IS STOP</b> is true, walls block you.
-          Push <b>STOP</b> away and the rule disappears. Form a new sentence and the world obeys it.
+          Walking nicely will not save you. Pushing boxes politely will not save you.
+          The room has made a grammatical decision and you must make a worse one.
         </p>
       </div>
+      <div class="fridge-label">CHOOSE A PROBLEM ↓</div>
       <div id="levelGrid" class="level-grid"></div>
     </section>
 
@@ -41,76 +46,52 @@
         <div>
           <p id="chapterLabel" class="eyebrow"></p>
           <h2 id="levelTitle"></h2>
-          <p id="levelHint" class="level-hint"></p>
+          <p id="levelHint" class="hint"></p>
         </div>
-        <div class="step-box">
-          <span>STEPS</span>
-          <strong id="stepCount">0</strong>
-        </div>
+        <div class="step-box"><span>bad decisions</span><strong id="stepCount">0</strong></div>
       </div>
 
       <div class="layout">
         <div class="game-panel">
-          <div id="board" class="board" aria-label="Rule puzzle board"></div>
-          <div class="mobile-controls" aria-label="Touch controls">
-            <button data-move="up" type="button">↑</button>
-            <div>
-              <button data-move="left" type="button">←</button>
-              <button data-move="down" type="button">↓</button>
-              <button data-move="right" type="button">→</button>
-            </div>
-          </div>
+          <div class="tape tape-left" aria-hidden="true"></div>
+          <div class="tape tape-right" aria-hidden="true"></div>
+          <div id="board" class="board"></div>
+          <div id="status" class="status"></div>
         </div>
 
         <aside class="sidebar">
-          <section>
-            <p class="eyebrow">ACTIVE RULES</p>
+          <section class="sticky sticky-yellow">
+            <p class="eyebrow">CURRENTLY TRUE, ALLEGEDLY</p>
             <div id="rules" class="rules"></div>
           </section>
-
-          <section>
-            <p class="eyebrow">CONTROLS</p>
-            <p>Move — arrows / WASD</p>
-            <p>Undo — Z</p>
-            <p>Reset — R</p>
-            <p>Levels — Esc</p>
+          <section class="sticky sticky-pink">
+            <p class="eyebrow">BUTTON MASHING GUIDE</p>
+            <p>move · arrows / WASD</p>
+            <p>undo · Z</p>
+            <p>reset · R</p>
+            <p>escape to levels · Esc</p>
           </section>
-
-          <section>
-            <p class="eyebrow">MECHANICS IN THIS GAME</p>
-            <div class="legend">
-              <span>YOU</span><span>STOP</span><span>PUSH</span><span>WIN</span>
-              <span>AND</span><span>MOVE</span><span>SINK</span><span>DEFEAT</span>
-              <span>OPEN</span><span>SHUT</span><span>HOT</span><span>MELT</span>
-              <span>WEAK</span><span>HAS</span><span>NOUN → NOUN</span>
-            </div>
+          <section class="sticky sticky-blue">
+            <p class="eyebrow">HOUSE RULE</p>
+            <p class="muted">If you can win without touching the words, somebody has made a terrible mistake.</p>
           </section>
+          <div class="sidebar-graffiti" aria-hidden="true">grammar<br>was here</div>
         </aside>
       </div>
     </section>
 
     <div id="winOverlay" class="overlay" hidden>
-      <div class="modal-card">
-        <p class="eyebrow">ROOM SOLVED</p>
+      <div class="modal">
+        <div class="stamp">LEGAL-ish</div>
+        <p class="eyebrow">ROOM REWRITTEN</p>
         <h2 id="winTitle"></h2>
         <p id="winText"></p>
+        <p id="winNonsense" class="win-nonsense"></p>
         <div class="modal-actions">
-          <button id="nextBtn" type="button">Next room</button>
-          <button id="replayBtn" type="button">Replay</button>
-          <button id="levelsBtn" type="button">Level select</button>
+          <button id="nextBtn" type="button">make another mistake →</button>
+          <button id="replayBtn" type="button">do it again, somehow</button>
+          <button id="levelsBtn" type="button">run away to levels</button>
         </div>
-      </div>
-    </div>
-
-    <div id="endOverlay" class="overlay" hidden>
-      <div class="modal-card end-card">
-        <p class="eyebrow">FINAL RULE</p>
-        <h2>WORLD IS OPEN.</h2>
-        <p>
-          You escaped twelve rooms by changing what things meant.
-          The last door was never locked. It was only described that way.
-        </p>
-        <button id="endLevelsBtn" type="button">Return to levels</button>
       </div>
     </div>
   </main>
