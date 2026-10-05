@@ -1,155 +1,247 @@
-const TILE_TYPES={OBJECT:"object",WORD:"word"};
-const DIRECTIONS={ArrowUp:[0,-1],KeyW:[0,-1],ArrowDown:[0,1],KeyS:[0,1],ArrowLeft:[-1,0],KeyA:[-1,0],ArrowRight:[1,0],KeyD:[1,0]};
+const board = document.getElementById("board");
+const rulesEl = document.getElementById("rules");
+const menuView = document.getElementById("menuView");
+const gameView = document.getElementById("gameView");
+const levelGrid = document.getElementById("levelGrid");
+const chapterLabel = document.getElementById("chapterLabel");
+const levelTitle = document.getElementById("levelTitle");
+const levelHint = document.getElementById("levelHint");
+const stepCount = document.getElementById("stepCount");
+const undoBtn = document.getElementById("undoBtn");
+const resetBtn = document.getElementById("resetBtn");
+const menuBtn = document.getElementById("menuBtn");
+const soundBtn = document.getElementById("soundBtn");
+const winOverlay = document.getElementById("winOverlay");
+const endOverlay = document.getElementById("endOverlay");
+const winTitle = document.getElementById("winTitle");
+const winText = document.getElementById("winText");
+const nextBtn = document.getElementById("nextBtn");
+const replayBtn = document.getElementById("replayBtn");
+const levelsBtn = document.getElementById("levelsBtn");
+const endLevelsBtn = document.getElementById("endLevelsBtn");
 
-const LEVELS=[
-{
- name:"01 / BREAK THE WALL",
- hint:"The text is movable. A rule is only true while the words stay aligned.",
- width:12,height:10,
- entities:[
-  {id:"p1",type:"object",noun:"PLAYER",x:2,y:6},
-  {id:"r1",type:"object",noun:"ROCK",x:5,y:6},
-  {id:"f1",type:"object",noun:"FLAG",x:9,y:2},
-  {id:"w1",type:"object",noun:"WALL",x:7,y:4},{id:"w2",type:"object",noun:"WALL",x:7,y:5},{id:"w3",type:"object",noun:"WALL",x:7,y:6},{id:"w4",type:"object",noun:"WALL",x:7,y:7},{id:"w5",type:"object",noun:"WALL",x:7,y:8},
-  {id:"t1",type:"word",word:"PLAYER",kind:"noun",x:1,y:1},{id:"t2",type:"word",word:"IS",kind:"op",x:2,y:1},{id:"t3",type:"word",word:"YOU",kind:"prop",x:3,y:1},
-  {id:"t4",type:"word",word:"WALL",kind:"noun",x:1,y:3},{id:"t5",type:"word",word:"IS",kind:"op",x:2,y:3},{id:"t6",type:"word",word:"STOP",kind:"prop",x:3,y:3},
-  {id:"t7",type:"word",word:"ROCK",kind:"noun",x:1,y:8},{id:"t8",type:"word",word:"IS",kind:"op",x:2,y:8},{id:"t9",type:"word",word:"PUSH",kind:"prop",x:3,y:8},
-  {id:"t10",type:"word",word:"FLAG",kind:"noun",x:8,y:1},{id:"t11",type:"word",word:"IS",kind:"op",x:9,y:1},{id:"t12",type:"word",word:"WIN",kind:"prop",x:10,y:1}
- ]
-},
-{
- name:"02 / BECOME THE ROCK",
- hint:"No PLAYER exists. Create ROCK IS PLAYER; PLAYER IS YOU is already waiting.",
- width:12,height:10,
- entities:[
-  {id:"r1",type:"object",noun:"ROCK",x:2,y:7},{id:"r2",type:"object",noun:"ROCK",x:4,y:7},
-  {id:"f1",type:"object",noun:"FLAG",x:9,y:2},
-  {id:"w1",type:"object",noun:"WALL",x:7,y:3},{id:"w2",type:"object",noun:"WALL",x:7,y:4},{id:"w3",type:"object",noun:"WALL",x:7,y:5},{id:"w4",type:"object",noun:"WALL",x:7,y:6},
-  {id:"t1",type:"word",word:"ROCK",kind:"noun",x:1,y:1},{id:"t2",type:"word",word:"IS",kind:"op",x:2,y:1},{id:"t3",type:"word",word:"PUSH",kind:"prop",x:3,y:1},
-  {id:"t4",type:"word",word:"FLAG",kind:"noun",x:8,y:1},{id:"t5",type:"word",word:"IS",kind:"op",x:9,y:1},{id:"t6",type:"word",word:"WIN",kind:"prop",x:10,y:1},
-  {id:"t7",type:"word",word:"WALL",kind:"noun",x:1,y:3},{id:"t8",type:"word",word:"IS",kind:"op",x:2,y:3},{id:"t9",type:"word",word:"STOP",kind:"prop",x:3,y:3},
-  {id:"t10",type:"word",word:"PLAYER",kind:"noun",x:4,y:5},{id:"t11",type:"word",word:"IS",kind:"op",x:5,y:5},{id:"t12",type:"word",word:"YOU",kind:"prop",x:6,y:5},
-  {id:"t13",type:"word",word:"ROCK",kind:"noun",x:4,y:8},{id:"t14",type:"word",word:"IS",kind:"op",x:5,y:8},{id:"t15",type:"word",word:"PLAYER",kind:"noun",x:6,y:8}
- ]
-}
-];
+const DIRS = {
+  ArrowUp:[0,-1], KeyW:[0,-1],
+  ArrowDown:[0,1], KeyS:[0,1],
+  ArrowLeft:[-1,0], KeyA:[-1,0],
+  ArrowRight:[1,0], KeyD:[1,0]
+};
 
-let currentLevel=0,entities=[],rules=[],won=false,history=[];
-const board=document.getElementById("board"),rulesEl=document.getElementById("rules"),resetBtn=document.getElementById("resetBtn"),undoBtn=document.getElementById("undoBtn"),levelBtn=document.getElementById("levelBtn"),levelTitle=document.getElementById("levelTitle"),levelHint=document.getElementById("levelHint"),winOverlay=document.getElementById("winOverlay"),playAgainBtn=document.getElementById("playAgainBtn"),nextBtn=document.getElementById("nextBtn"),winText=document.getElementById("winText");
-const level=()=>LEVELS[currentLevel];
-const clone=list=>list.map(e=>({...e}));
+let currentIndex = 0;
+let engine = null;
+let solved = new Set();
+let soundOn = false;
+let audioCtx = null;
 
-function resetGame(){entities=clone(level().entities);won=false;history=[];winOverlay.hidden=true;settleWorld();render();}
-function snapshot(){return {entities:clone(entities),won};}
-function restore(s){entities=clone(s.entities);won=s.won;winOverlay.hidden=!won;settleWorld(false);render();}
-function pushHistory(){history.push(snapshot());if(history.length>200)history.shift();}
-function undo(){if(history.length)restore(history.pop());}
-function at(x,y){return entities.filter(e=>e.x===x&&e.y===y);}
-function inBounds(x,y){return x>=0&&y>=0&&x<level().width&&y<level().height;}
-function hasProp(noun,prop){return rules.some(r=>r.type==="property"&&r.subject===noun&&r.property===prop);}
-function isPush(e){return e.type===TILE_TYPES.WORD||hasProp(e.noun,"PUSH");}
-function isStop(e){return e.type===TILE_TYPES.OBJECT&&hasProp(e.noun,"STOP");}
-function isYou(e){return e.type===TILE_TYPES.OBJECT&&hasProp(e.noun,"YOU");}
-function isWin(e){return e.type===TILE_TYPES.OBJECT&&hasProp(e.noun,"WIN");}
-
-function tryMove(e,dx,dy,trail=new Set()){
- if(trail.has(e.id))return false; trail.add(e.id);
- const nx=e.x+dx,ny=e.y+dy;if(!inBounds(nx,ny))return false;
- for(const other of at(nx,ny).filter(o=>o.id!==e.id)){
-   if(isPush(other)){if(!tryMove(other,dx,dy,trail))return false;}
-   else if(isStop(other)) return false;
- }
- e.x=nx;e.y=ny;return true;
+function beep(freq=240,dur=.05) {
+  if (!soundOn) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(.028,audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime+dur);
 }
 
-function moveYou(dx,dy){
- if(won)return;
- const movers=entities.filter(isYou); if(!movers.length)return;
- pushHistory();
- for(const m of movers) tryMove(m,dx,dy,new Set());
- settleWorld();render();
+function showMenu() {
+  menuView.hidden = false;
+  gameView.hidden = true;
+  winOverlay.hidden = true;
+  endOverlay.hidden = true;
+  renderLevelGrid();
 }
 
-function parseRules(){
- const found=[];
- const wordAt=(x,y)=>entities.find(e=>e.type==="word"&&e.x===x&&e.y===y);
- function triplet(a,b,c){
-   if(!a||!b||!c||a.kind!=="noun"||b.word!=="IS")return;
-   if(c.kind==="prop")found.push({type:"property",subject:a.word,property:c.word});
-   else if(c.kind==="noun")found.push({type:"transform",subject:a.word,target:c.word});
- }
- for(const e of entities){
-   if(e.type!=="word"||e.kind!=="op"||e.word!=="IS")continue;
-   triplet(wordAt(e.x-1,e.y),e,wordAt(e.x+1,e.y));
-   triplet(wordAt(e.x,e.y-1),e,wordAt(e.x,e.y+1));
- }
- const seen=new Set();rules=found.filter(r=>{const k=JSON.stringify(r);if(seen.has(k))return false;seen.add(k);return true;});
+function startLevel(index) {
+  currentIndex = index;
+  engine = new RuleWorldEngine(LEVELS[index]);
+  menuView.hidden = true;
+  gameView.hidden = false;
+  winOverlay.hidden = true;
+  endOverlay.hidden = true;
+  render();
+  beep(180,.06);
 }
 
-function applyTransforms(){
- let changed=false;
- const transforms=rules.filter(r=>r.type==="transform");
- // Day 02 supports one target per subject. Multi-target duplication comes later.
- const map=new Map();
- for(const r of transforms) if(!map.has(r.subject)) map.set(r.subject,r.target);
- for(const e of entities){
-   if(e.type!=="object")continue;
-   const target=map.get(e.noun);
-   if(target&&target!==e.noun){e.noun=target;changed=true;}
- }
- return changed;
+function renderLevelGrid() {
+  levelGrid.innerHTML = "";
+  LEVELS.forEach((lvl,idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "level-card" + (solved.has(idx) ? " solved" : "");
+    btn.innerHTML = `
+      <span class="num">${String(lvl.id).padStart(2,"0")} · ${lvl.chapter}</span>
+      <strong>${lvl.title}</strong>
+      <span class="mechanic">${lvl.mechanic}</span>
+      ${solved.has(idx) ? '<span class="solved-mark">SOLVED ✓</span>' : ''}
+    `;
+    btn.addEventListener("click", () => startLevel(idx));
+    levelGrid.appendChild(btn);
+  });
 }
 
-function settleWorld(check=true){
- for(let pass=0;pass<8;pass++){parseRules();if(!applyTransforms())break;}
- parseRules();if(check)checkWin();
+function glyph(noun) {
+  const map = {
+    PLAYER:"●", ROCK:"◆", WALL:"■", FLAG:"⚑",
+    WATER:"≈", SKULL:"☠", KEY:"⌘", DOOR:"▣",
+    LAVA:"▲", ICE:"◇", GHOST:"◌", CRATE:"▦"
+  };
+  return map[noun] || "●";
 }
 
-function checkWin(){
- const ys=entities.filter(isYou),ws=entities.filter(isWin);
- for(const y of ys)for(const w of ws)if(y.x===w.x&&y.y===w.y){
-   won=true;winOverlay.hidden=false;
-   winText.textContent=currentLevel===0?"You changed a property rule.":"You changed what an object is.";
-   nextBtn.hidden=currentLevel>=LEVELS.length-1;return;
- }
+function render() {
+  if (!engine) return;
+
+  const lvl = LEVELS[currentIndex];
+  chapterLabel.textContent = lvl.chapter;
+  levelTitle.textContent = `${String(lvl.id).padStart(2,"0")} · ${lvl.title}`;
+  levelHint.textContent = lvl.hint;
+  stepCount.textContent = engine.steps;
+
+  board.style.gridTemplateColumns = `repeat(${lvl.width}, var(--tile))`;
+  board.innerHTML = "";
+
+  for (let y=0; y<lvl.height; y++) {
+    for (let x=0; x<lvl.width; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      for (const e of engine.at(x,y)) {
+        const el = document.createElement("div");
+        el.className = "entity";
+
+        if (e.type === "word") {
+          el.classList.add("word",e.kind);
+          el.textContent = e.word;
+        } else {
+          el.classList.add("object",e.noun.toLowerCase());
+          el.textContent = glyph(e.noun);
+          el.title = e.noun;
+        }
+        cell.appendChild(el);
+      }
+      board.appendChild(cell);
+    }
+  }
+
+  renderRules();
+  undoBtn.disabled = engine.history.length === 0;
+
+  if (engine.won) showWin();
 }
 
-function renderRules(){
- rulesEl.innerHTML="";
- if(!rules.length){rulesEl.innerHTML='<p class="muted">No active rules.</p>';return;}
- for(const r of rules){
-   const d=document.createElement("div");d.className="rule-pill";
-   if(r.type==="property")d.textContent=`${r.subject} IS ${r.property}`;
-   else{d.classList.add("transform");d.textContent=`${r.subject} IS ${r.target}`;}
-   rulesEl.appendChild(d);
- }
+function renderRules() {
+  rulesEl.innerHTML = "";
+  if (!engine.rules.length) {
+    rulesEl.innerHTML = '<p>No active rules.</p>';
+    return;
+  }
+
+  for (const r of engine.rules) {
+    const div = document.createElement("div");
+    div.className = "rule-pill";
+    if (r.type === "property") div.textContent = `${r.subject} IS ${r.property}`;
+    if (r.type === "transform") {
+      div.classList.add("transform");
+      div.textContent = `${r.subject} IS ${r.target}`;
+    }
+    if (r.type === "has") {
+      div.classList.add("has");
+      div.textContent = `${r.subject} HAS ${r.target}`;
+    }
+    rulesEl.appendChild(div);
+  }
 }
 
-function glyph(noun){return ({PLAYER:"●",ROCK:"◆",WALL:"■",FLAG:"⚑",KEY:"⌘"})[noun]||"●";}
-function render(){
- board.style.gridTemplateColumns=`repeat(${level().width}, var(--tile))`;board.innerHTML="";
- levelTitle.textContent=level().name;levelHint.textContent=level().hint;levelBtn.textContent=`Level ${currentLevel+1}`;undoBtn.disabled=!history.length;
- for(let y=0;y<level().height;y++)for(let x=0;x<level().width;x++){
-   const cell=document.createElement("div");cell.className="cell";
-   for(const e of at(x,y)){
-     const el=document.createElement("div");el.className="entity";
-     if(e.type==="word"){el.classList.add("word");el.textContent=e.word;}
-     else{el.classList.add("object",e.noun.toLowerCase());el.textContent=glyph(e.noun);}
-     cell.appendChild(el);
-   }
-   board.appendChild(cell);
- }
- renderRules();
+function move(dx,dy) {
+  if (!engine) return;
+  const beforeWon = engine.won;
+  const moved = engine.movePlayer(dx,dy);
+  if (moved) {
+    beep(150,.025);
+    render();
+    if (!beforeWon && engine.won) beep(420,.18);
+  }
 }
 
-document.addEventListener("keydown",e=>{
- if(e.code==="KeyZ"){e.preventDefault();undo();return;}
- if(e.code==="KeyR"){e.preventDefault();resetGame();return;}
- const d=DIRECTIONS[e.code]||DIRECTIONS[e.key];if(!d)return;e.preventDefault();moveYou(d[0],d[1]);
+function showWin() {
+  solved.add(currentIndex);
+  winTitle.textContent = LEVELS[currentIndex].title;
+  winText.textContent = `Solved in ${engine.steps} step${engine.steps === 1 ? "" : "s"}.`;
+  nextBtn.hidden = currentIndex >= LEVELS.length - 1;
+  winOverlay.hidden = false;
+}
+
+function nextLevel() {
+  winOverlay.hidden = true;
+  if (currentIndex >= LEVELS.length - 1) {
+    endOverlay.hidden = false;
+    return;
+  }
+  startLevel(currentIndex+1);
+}
+
+document.addEventListener("keydown", e => {
+  if (!gameView.hidden) {
+    if (e.code === "KeyZ") {
+      e.preventDefault();
+      if (engine.undo()) { render(); beep(110,.04); }
+      return;
+    }
+    if (e.code === "KeyR") {
+      e.preventDefault();
+      engine.reset();
+      render();
+      return;
+    }
+    if (e.code === "Escape") {
+      e.preventDefault();
+      showMenu();
+      return;
+    }
+    const d = DIRS[e.code] || DIRS[e.key];
+    if (d) {
+      e.preventDefault();
+      move(d[0],d[1]);
+    }
+  }
 });
-resetBtn.addEventListener("click",resetGame);
-undoBtn.addEventListener("click",undo);
-levelBtn.addEventListener("click",()=>{currentLevel=(currentLevel+1)%LEVELS.length;resetGame();});
-playAgainBtn.addEventListener("click",resetGame);
-nextBtn.addEventListener("click",()=>{if(currentLevel<LEVELS.length-1){currentLevel++;resetGame();}});
-resetGame();
+
+document.querySelectorAll("[data-move]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const map = {
+      up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]
+    };
+    const d = map[btn.dataset.move];
+    move(d[0],d[1]);
+  });
+});
+
+undoBtn.addEventListener("click", () => {
+  if (engine && engine.undo()) { render(); beep(110,.04); }
+});
+
+resetBtn.addEventListener("click", () => {
+  if (!engine) return;
+  engine.reset();
+  render();
+});
+
+menuBtn.addEventListener("click", showMenu);
+
+soundBtn.addEventListener("click", () => {
+  soundOn = !soundOn;
+  soundBtn.textContent = soundOn ? "Sound on" : "Sound off";
+  if (soundOn) beep(260,.05);
+});
+
+nextBtn.addEventListener("click", nextLevel);
+replayBtn.addEventListener("click", () => startLevel(currentIndex));
+levelsBtn.addEventListener("click", showMenu);
+endLevelsBtn.addEventListener("click", showMenu);
+
+renderLevelGrid();
+showMenu();

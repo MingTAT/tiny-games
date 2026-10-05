@@ -1,58 +1,158 @@
 # Rule Is World
 
-A rule-rewriting puzzle game where words on the board define the physics of the board.
+A complete small rule-rewriting puzzle game.
 
-This project grows one day at a time.
+The central idea:
 
-## Day 01
+> the rules of the world exist as movable objects inside the world.
 
-- grid movement
-- pushable word blocks
+If the board says:
+
+```text
+WALL IS STOP
+```
+
+walls block movement.
+
+Push `STOP` away and the sentence breaks. The wall immediately loses that property.
+
+This project is inspired by the general rule-rewriting puzzle-game idea, but uses its own title, visual design, code, level layouts, progression, and presentation.
+
+## Complete Edition
+
+This version contains:
+
+- 12 playable rooms
+- level-select screen
+- active-rule display
+- keyboard and touch controls
+- undo
+- reset
+- multiple simultaneous `YOU` objects
+- noun transformations
+- chained rule evaluation
 - horizontal and vertical rule parsing
-- `YOU`
-- `STOP`
-- `PUSH`
-- `WIN`
-- one playable level
-- live active-rule display
+- `AND`
+- `HAS`
+- autonomous `MOVE`
+- interaction resolution
+- win screen and final ending
+- responsive layout
+- optional minimal sound
 
-## Day 02
+## Rules implemented
 
-New today:
+### Core
 
-- noun-to-noun transformation rules
-- simple chained transformations
-- undo history
-- `Z` to undo
-- `R` to reset
-- second playable level
-- active rules distinguish properties from transformations
+```text
+X IS YOU
+X IS STOP
+X IS PUSH
+X IS WIN
+```
 
-A rule like:
+### Rule composition
+
+```text
+X AND Y IS YOU
+X IS PUSH AND WEAK
+```
+
+### Identity
 
 ```text
 ROCK IS PLAYER
 ```
 
-now changes every `ROCK` object into a `PLAYER`.
+Objects can change noun identity, which means other rules may immediately begin applying to them.
 
-If:
+### Destruction and hazards
 
 ```text
-PLAYER IS YOU
+X IS SINK
+X IS DEFEAT
+X IS WEAK
+X IS HOT
+X IS MELT
 ```
 
-is also active, the transformed objects become controllable immediately.
+### Pairs
+
+```text
+KEY IS OPEN
+DOOR IS SHUT
+```
+
+`OPEN` and `SHUT` destroy each other on contact.
+
+### Motion
+
+```text
+GHOST IS MOVE
+```
+
+`MOVE` objects move after the player's turn and reverse direction when blocked.
+
+### Consequence
+
+```text
+CRATE HAS KEY
+```
+
+When the crate is destroyed, it leaves a key behind.
+
+## Controls
+
+```text
+Arrow keys / WASD   Move
+Z                   Undo
+R                   Reset room
+Esc                 Level select
+```
+
+Touch controls appear on smaller screens.
 
 ## Run
 
-Open `index.html` in a modern browser.
+Open:
 
-No install or server required.
+```text
+index.html
+```
 
-## Direction
+No install, server, build step, or package manager is required.
 
-Later systems can include `AND`, multi-target transformation, `MOVE`, `SINK`,
-`DEFEAT`, `OPEN / SHUT`, `HAS`, `MAKE`, richer level packs, and an editor.
+## Files
 
-Small changes, deep combinations.
+```text
+rule-is-world/
+├── index.html
+├── style.css
+├── levels.js
+├── engine.js
+├── game.js
+├── README.md
+└── DEVLOG.md
+```
+
+## Architecture
+
+`engine.js`
+: world state, movement, rule parsing, transformations, interactions, undo state.
+
+`levels.js`
+: all room definitions. Level design is data rather than engine code.
+
+`game.js`
+: rendering, menus, input, level progression, sound.
+
+`style.css`
+: presentation and responsive layout.
+
+This separation is intentional: new rooms should usually require editing `levels.js`, not the engine.
+
+## Scope
+
+This is a complete small game, not a feature-for-feature clone of any commercial title.
+
+The engine is designed so that more advanced grammar can be added later without rewriting the project from scratch.
