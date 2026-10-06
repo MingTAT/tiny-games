@@ -7,91 +7,99 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="doodle doodle-a" aria-hidden="true">↯</div>
-  <div class="doodle doodle-b" aria-hidden="true">NOPE</div>
-  <div class="doodle doodle-c" aria-hidden="true">?</div>
-
+  <div class="paper-noise" aria-hidden="true"></div>
   <main class="app">
     <header class="topbar">
-      <div class="title-wrap">
-        <p class="eyebrow">TINY-GAMES / LANGUAGE ACCIDENT NO. 05</p>
-        <h1><span>RULE</span> <b>IS</b> <span>WORLD</span></h1>
-        <p class="subtitle">Please do not feed the grammar after midnight.</p>
+      <div class="brand">
+        <p class="stamp">TINY-GAMES // FORM 04-B // DO NOT REWRITE</p>
+        <h1>RULE <em>IS</em> WORLD</h1>
+        <p class="subtitle">an unauthorized grammar incident</p>
       </div>
-      <div class="actions">
-        <button id="menuBtn" type="button">levels??</button>
+      <div class="top-actions">
+        <button id="menuBtn" type="button">← suspicious folders</button>
         <button id="undoBtn" type="button">undo that crime</button>
         <button id="resetBtn" type="button">panic reset</button>
+        <button id="soundBtn" type="button">tiny noises: off</button>
       </div>
     </header>
 
     <section id="menuView" class="menu-view">
-      <div class="manifesto">
-        <div class="manifesto-note">
-          <p class="eyebrow">OFFICIAL NOTICE*</p>
-          <h2>Every room is impossible on purpose.</h2>
-          <span class="asterisk">*official status disputed</span>
-        </div>
+      <div class="notice hero-note">
+        <p class="stamp">IMPORTANT OFFICIAL NOTICE</p>
+        <h2>The room is impossible.<br>That is apparently your problem.</h2>
         <p>
-          Walking nicely will not save you. Pushing boxes politely will not save you.
-          The room has made a grammatical decision and you must make a worse one.
+          Words are physical objects. Rules only exist while their words line up.
+          If a level can be solved without touching the grammar, please report the level for misconduct.
         </p>
       </div>
-      <div class="fridge-label">CHOOSE A PROBLEM ↓</div>
-      <div id="levelGrid" class="level-grid"></div>
+      <div id="worldList" class="world-list"></div>
     </section>
 
     <section id="gameView" class="game-view" hidden>
-      <div class="game-head">
+      <div class="game-heading">
         <div>
-          <p id="chapterLabel" class="eyebrow"></p>
+          <p id="chapterLabel" class="stamp"></p>
           <h2 id="levelTitle"></h2>
           <p id="levelHint" class="hint"></p>
         </div>
-        <div class="step-box"><span>bad decisions</span><strong id="stepCount">0</strong></div>
+        <div class="decision-counter">
+          <span>BAD DECISIONS</span>
+          <strong id="stepCount">0</strong>
+        </div>
       </div>
 
-      <div class="layout">
-        <div class="game-panel">
-          <div class="tape tape-left" aria-hidden="true"></div>
-          <div class="tape tape-right" aria-hidden="true"></div>
-          <div id="board" class="board"></div>
-          <div id="status" class="status"></div>
+      <div class="game-layout">
+        <div class="board-wrap">
+          <div class="tape tape-a"></div>
+          <div class="tape tape-b"></div>
+          <div id="board" class="board" aria-label="Rule puzzle board"></div>
+          <p id="status" class="status" aria-live="polite"></p>
+          <div class="touch-controls" aria-label="Touch movement controls">
+            <button data-move="up" type="button">↑</button>
+            <div>
+              <button data-move="left" type="button">←</button>
+              <button data-move="down" type="button">↓</button>
+              <button data-move="right" type="button">→</button>
+            </div>
+          </div>
         </div>
 
         <aside class="sidebar">
-          <section class="sticky sticky-yellow">
-            <p class="eyebrow">CURRENTLY TRUE, ALLEGEDLY</p>
+          <section class="rule-note">
+            <p class="stamp">CURRENTLY TRUE, ALLEGEDLY</p>
             <div id="rules" class="rules"></div>
           </section>
-          <section class="sticky sticky-pink">
-            <p class="eyebrow">BUTTON MASHING GUIDE</p>
-            <p>move · arrows / WASD</p>
-            <p>undo · Z</p>
-            <p>reset · R</p>
-            <p>escape to levels · Esc</p>
+          <section class="scribble-note">
+            <p class="stamp">MOVING THE PROBLEM AROUND</p>
+            <p>arrows / WASD — move</p>
+            <p>Z — regret</p>
+            <p>R — deny everything</p>
+            <p>Esc — flee to folders</p>
           </section>
-          <section class="sticky sticky-blue">
-            <p class="eyebrow">HOUSE RULE</p>
-            <p class="muted">If you can win without touching the words, somebody has made a terrible mistake.</p>
+          <section class="scribble-note tiny">
+            <p class="stamp">KNOWN OFFENCES</p>
+            <p>YOU · STOP · PUSH · WIN · AND</p>
+            <p>OPEN · SHUT · DEFEAT · WEAK</p>
+            <p>ON · NEAR · FACING</p>
+            <p>HAS · MAKE · MOVE</p>
           </section>
-          <div class="sidebar-graffiti" aria-hidden="true">grammar<br>was here</div>
         </aside>
       </div>
     </section>
 
     <div id="winOverlay" class="overlay" hidden>
-      <div class="modal">
-        <div class="stamp">LEGAL-ish</div>
-        <p class="eyebrow">ROOM REWRITTEN</p>
+      <div class="win-card">
+        <div class="confetti-word">IS</div>
+        <p class="stamp">GRAMMAR INCIDENT RESOLVED*</p>
         <h2 id="winTitle"></h2>
         <p id="winText"></p>
-        <p id="winNonsense" class="win-nonsense"></p>
-        <div class="modal-actions">
-          <button id="nextBtn" type="button">make another mistake →</button>
-          <button id="replayBtn" type="button">do it again, somehow</button>
-          <button id="levelsBtn" type="button">run away to levels</button>
+        <p id="winJoke" class="win-joke"></p>
+        <div class="win-actions">
+          <button id="nextBtn" type="button">commit another offence →</button>
+          <button id="replayBtn" type="button">do the same crime again</button>
+          <button id="levelsBtn" type="button">folders</button>
         </div>
+        <small>* nobody has verified this claim</small>
       </div>
     </div>
   </main>
