@@ -12,29 +12,29 @@ If the board says:
 WALL IS STOP
 ```
 
-then walls block movement. Move `STOP` away and the sentence stops being true. The wall immediately stops behaving like a wall.
+walls block movement. Move `STOP` away and the sentence stops being true.
 
-The campaign is designed around a strict level-design rule:
+The campaign follows one strict design rule:
 
-> **Every room must require changing the text.**
+> **Every room must require interfering with the grammar.**
 
-This is not meant to be Sokoban with sentences drawn on top of it.
+It is not meant to be Sokoban with sentences drawn on top of it.
 
 ## Campaign
 
-The current build contains **24 rooms across four worlds**.
+The current build contains **30 rooms across five worlds**.
 
 ### World 1 — PLEASE DO NOT TOUCH THE GRAMMAR
 
-Learn that rules can be broken, created, extended with `AND`, and reassigned.
+Break rules, create rules, extend them with `AND`, and reassign properties.
 
 ### World 2 — YOU ARE NOT WHO HR SAID YOU ARE
 
-Control is no longer tied to one avatar. Create new `YOU` rules and transform one noun into another.
+Control is temporary. More than one object can be `YOU`, and nouns can become other nouns.
 
 ### World 3 — WINNING IS A TEMPORARY CONDITION
 
-The goal itself becomes editable. Transfer `WIN`, make obstacles into goals, and create `OPEN / SHUT` interactions.
+The goal itself becomes editable. `WIN` can move, disappear, or belong to something ridiculous.
 
 ### World 4 — OBJECTS HAVE FILED A COMPLAINT
 
@@ -47,6 +47,20 @@ PLAYER FACING WALL IS WIN
 ```
 
 This world also introduces `HAS`, `MAKE`, and `MOVE`.
+
+### World 5 — THE RULEBOOK HAS ESCAPED
+
+The grammar stops pretending to be outside the world.
+
+```text
+PLAYER NEAR TEXT IS WIN
+TEXT IS YOU
+TEXT IS MOVE
+EMPTY IS WIN
+LEVEL IS WIN
+```
+
+The final room requires giving control to the documentation itself so that the text can complete a rule about the level containing it.
 
 ## Implemented grammar
 
@@ -78,6 +92,7 @@ PLAYER AND ROCK IS YOU
 
 ```text
 ROCK IS PLAYER
+TEXT IS ROCK
 ```
 
 ### Conditional subjects
@@ -86,6 +101,7 @@ ROCK IS PLAYER
 ROCK ON WATER IS WIN
 PLAYER NEAR FLAG IS WIN
 PLAYER FACING WALL IS WIN
+PLAYER NEAR TEXT IS WIN
 ```
 
 ### Consequences
@@ -94,6 +110,14 @@ PLAYER FACING WALL IS WIN
 CRATE HAS KEY
 PLAYER MAKE ROCK
 ```
+
+### Meta subjects
+
+`TEXT` refers to every word block. Text is still physically pushable by default, but it can now also receive properties such as `YOU`, `WIN`, and `MOVE`.
+
+`EMPTY` refers to an otherwise unoccupied tile. In the current campaign it is used as a meta victory condition.
+
+`LEVEL` refers to the room as a whole. `LEVEL IS WIN` makes the existence of any surviving `YOU` sufficient to resolve the room.
 
 ## Controls
 
@@ -108,15 +132,7 @@ Touch arrows are shown on narrow screens.
 
 ## Run
 
-No dependencies, package manager, or server are required.
-
-Open:
-
-```text
-index.html
-```
-
-in a modern browser.
+No dependencies, package manager, or server are required. Open `index.html` in a modern browser.
 
 ## Project structure
 
@@ -134,12 +150,6 @@ rule-is-world/
     └── validate.js
 ```
 
-`engine.js` contains the rule system.
-
-`levels.js` contains the campaign as data.
-
-`game.js` contains rendering, menus, progress, controls, and the deliberately unhelpful bureaucracy.
-
 ## Validation
 
 With Node installed:
@@ -148,12 +158,4 @@ With Node installed:
 node tests/validate.js
 ```
 
-runs a known-good route through all 24 rooms. These routes are for regression testing only and are not surfaced in the game.
-
-## What comes next
-
-The fifth world is intentionally not implemented yet. Its planned theme is:
-
-> **THE RULEBOOK HAS ESCAPED**
-
-That is where `TEXT`, `EMPTY`, and eventually the level itself can become subjects of rules.
+The regression suite runs a known-good solution through all 30 rooms and checks the meta-rule features introduced in World 5.

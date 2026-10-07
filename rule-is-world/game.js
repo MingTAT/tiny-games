@@ -26,7 +26,8 @@ const WORLD_META = {
   1:{title:'PLEASE DO NOT TOUCH THE GRAMMAR', note:'Rules can be broken. This has somehow surprised management.'},
   2:{title:'YOU ARE NOT WHO HR SAID YOU ARE', note:'Identity is now considered a temporary administrative field.'},
   3:{title:'WINNING IS A TEMPORARY CONDITION', note:'Victory has been outsourced. No fixed endpoint is guaranteed.'},
-  4:{title:'OBJECTS HAVE FILED A COMPLAINT', note:'Rules may now depend on where things are, what they face, and who is standing too close.'}
+  4:{title:'OBJECTS HAVE FILED A COMPLAINT', note:'Rules may now depend on where things are, what they face, and who is standing too close.'},
+  5:{title:'THE RULEBOOK HAS ESCAPED', note:'Words, empty space, and eventually the room itself have requested legal personhood.'}
 };
 
 const DIRS = {
@@ -103,7 +104,7 @@ function showMenu(){
 
 function renderMenu(){
   UI.worldList.innerHTML='';
-  for(const world of [1,2,3,4]){
+  for(const world of [1,2,3,4,5]){
     const meta=WORLD_META[world];
     const section=document.createElement('section'); section.className='world-section';
     const head=document.createElement('div'); head.className='world-head';
@@ -154,7 +155,7 @@ function renderBoard(){
     engine.at(x,y).forEach((e,i)=>{
       const el=document.createElement('div'); el.className='entity';
       if(e.type==='word'){
-        el.classList.add('word',e.kind); el.textContent=e.word;
+        el.classList.add('word',e.kind); if(['TEXT','EMPTY','LEVEL'].includes(e.word)) el.classList.add('meta'); el.textContent=e.word;
       } else {
         el.classList.add('object',e.noun.toLowerCase()); el.textContent=GLYPHS[e.noun]||'●'; el.title=e.noun;
       }
@@ -193,9 +194,15 @@ function move(dx,dy){
 
 function showWin(){
   const lvl=LEVELS[currentIndex]; solved.add(lvl.id); saveSolved();
-  UI.winTitle.textContent=lvl.title;
-  UI.winText.textContent=`Resolved in ${engine.steps} bad decision${engine.steps===1?'':'s'}.`;
-  UI.winJoke.textContent=pick(JOKES,engine.steps+lvl.id);
+  if(lvl.id===30){
+    UI.winTitle.textContent='RULE IS WORLD';
+    UI.winText.textContent=`The rulebook escaped containment in ${engine.steps} bad decisions.`;
+    UI.winJoke.textContent='The rules were never outside the world. Please return all grammar to its original location before leaving.';
+  } else {
+    UI.winTitle.textContent=lvl.title;
+    UI.winText.textContent=`Resolved in ${engine.steps} bad decision${engine.steps===1?'':'s'}.`;
+    UI.winJoke.textContent=pick(JOKES,engine.steps+lvl.id);
+  }
   UI.nextBtn.hidden=currentIndex>=LEVELS.length-1;
   UI.winOverlay.hidden=false;
 }

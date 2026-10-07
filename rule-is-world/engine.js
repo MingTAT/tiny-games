@@ -226,13 +226,15 @@ class RuleWorldEngine {
     if (entity.type !== 'object') return false;
     const targets = new Set(condition.targets);
 
+    const matchesTarget = o => targets.has(this.entityRuleNoun(o));
+
     if (condition.relation === 'ON') {
-      return this.objectsAt(entity.x, entity.y).some(o => o.id !== entity.id && targets.has(o.noun));
+      return this.at(entity.x, entity.y).some(o => o.id !== entity.id && matchesTarget(o));
     }
 
     if (condition.relation === 'NEAR') {
       return this.entities.some(o => {
-        if (o.type !== 'object' || o.id === entity.id || !targets.has(o.noun)) return false;
+        if (o.id === entity.id || !matchesTarget(o)) return false;
         const dx = Math.abs(o.x - entity.x);
         const dy = Math.abs(o.y - entity.y);
         return Math.max(dx,dy) === 1;
@@ -242,18 +244,28 @@ class RuleWorldEngine {
     if (condition.relation === 'FACING') {
       const dirs = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
       const [dx,dy] = dirs[entity.dir || 'right'];
-      return this.objectsAt(entity.x + dx, entity.y + dy).some(o => targets.has(o.noun));
+      return this.at(entity.x + dx, entity.y + dy).some(matchesTarget);
     }
 
     return false;
   }
 
+  entityRuleNoun(entity) {
+    if (entity.type === 'word') return 'TEXT';
+    if (entity.type === 'object') return entity.noun;
+    return null;
+  }
+
   ruleMatchesEntity(rule, entity) {
-    return entity.type === 'object' && rule.subjects.includes(entity.noun) && this.matchesCondition(entity, rule.condition);
+    const noun = this.entityRuleNoun(entity);
+    return !!noun && rule.subjects.includes(noun) && this.matchesCondition(entity, rule.condition);
+  }
+
+  metaHasProperty(noun, prop) {
+    return this.rules.some(r => r.type === 'property' && !r.condition && r.property === prop && r.subjects.includes(noun));
   }
 
   entityHasProperty(entity, prop) {
-    if (entity.type !== 'object') return false;
     return this.rules.some(r => r.type === 'property' && r.property === prop && this.ruleMatchesEntity(r, entity));
   }
 
@@ -262,19 +274,25 @@ class RuleWorldEngine {
   }
 
   isPushable(entity) {
+    // Text remains physically pushable by default, but can also receive rule properties.
     return entity.type === 'word' || this.entityHasProperty(entity, 'PUSH');
   }
 
   isStop(entity) {
-    return entity.type === 'object' && this.entityHasProperty(entity, 'STOP');
+    return this.entityHasProperty(entity, 'STOP');
   }
 
   isYou(entity) {
-    return entity.type === 'object' && this.entityHasProperty(entity, 'YOU');
+    return this.entityHasProperty(entity, 'YOU');
   }
 
   isWin(entity) {
-    return entity.type === 'object' && this.entityHasProperty(entity, 'WIN');
+    return this.entityHasProperty(entity, 'WIN');
+  }
+
+  cellIsEmptyExcept(x,y,ignoreIds=[]) {
+    const ignored = new Set(Array.isArray(ignoreIds) ? ignoreIds : [ignoreIds]);
+    return !this.entities.some(e => e.x === x && e.y === y && !ignored.has(e.id));
   }
 
   spawn(noun, x, y, dir='right') {
@@ -292,14 +310,19 @@ class RuleWorldEngine {
     const nounById = new Map();
 
     for (const e of original) {
-      if (e.type !== 'object') continue;
       const matches = transforms.filter(r => this.ruleMatchesEntity(r, e));
       if (matches.length) nounById.set(e.id, matches[0].target);
     }
 
     for (const e of this.entities) {
       const target = nounById.get(e.id);
-      if (target && target !== e.noun) {
+      if (!target) continue;
+      if (e.type === 'word') {
+        // A meta rule such as TEXT IS ROCK turns rule blocks into ordinary objects.
+        delete e.word; delete e.kind;
+        e.type = 'object'; e.noun = target;
+        changed = true;
+      } else if (target !== e.noun) {
         e.noun = target;
         changed = true;
       }
@@ -405,7 +428,7 @@ class RuleWorldEngine {
     if (!makeRules.length) return;
 
     const pending = [];
-    const sources = this.entities.filter(e => e.type === 'object');
+    const sources = this.entities.slice();
     for (const source of sources) {
       for (const rule of makeRules) {
         if (!this.ruleMatchesEntity(rule, source)) continue;
@@ -428,6 +451,8 @@ class RuleWorldEngine {
     if (!this.inBounds(nx,ny)) return false;
     const occupants = this.at(nx,ny).filter(o => o.id !== entity.id);
 
+    if (!occupants.length && this.metaHasProperty('EMPTY','STOP')) return false;
+
     for (const other of occupants) {
       if (this.compatibleOpenShut(entity, other)) continue;
       if (this.isPushable(other)) {
@@ -444,7 +469,7 @@ class RuleWorldEngine {
     trail.add(entity.id);
 
     const dirName = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
-    if (entity.type === 'object') entity.dir = dirName;
+    entity.dir = dirName;
 
     const nx = entity.x + dx;
     const ny = entity.y + dy;
@@ -473,7 +498,7 @@ class RuleWorldEngine {
   moveAutonomous() {
     const dirs = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
     const reverse = {up:'down',down:'up',left:'right',right:'left'};
-    const movers = this.entities.filter(e => e.type === 'object' && this.entityHasProperty(e,'MOVE'));
+    const movers = this.entities.filter(e => this.entityHasProperty(e,'MOVE'));
 
     for (const mover of movers) {
       let dir = mover.dir || 'right';
@@ -490,6 +515,23 @@ class RuleWorldEngine {
   checkWin() {
     const yous = this.entities.filter(e => this.isYou(e));
     const wins = this.entities.filter(e => this.isWin(e));
+
+    // LEVEL is a meta-subject. If LEVEL IS WIN, any surviving YOU satisfies the room.
+    if (yous.length && this.metaHasProperty('LEVEL','WIN')) {
+      this.won = true;
+      return true;
+    }
+
+    // EMPTY means a tile containing nothing except the YOU entity currently standing there.
+    if (this.metaHasProperty('EMPTY','WIN')) {
+      for (const y of yous) {
+        if (this.cellIsEmptyExcept(y.x,y.y,[y.id])) {
+          this.won = true;
+          return true;
+        }
+      }
+    }
+
     for (const y of yous) {
       for (const w of wins) {
         if (y.x === w.x && y.y === w.y) {

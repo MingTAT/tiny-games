@@ -337,6 +337,87 @@ const LEVELS = [
       W('FLAG','noun',0,2),W('IS','op',1,2),
       W('MOVE','prop',2,4)
     ]
+  },
+
+  // WORLD 5 — THE RULEBOOK HAS ESCAPED
+  {
+    id:25, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'Words Count as Things', mechanic:'TEXT AS A NOUN',
+    hint:'Complete PLAYER NEAR TEXT IS WIN. The paperwork is now part of the physics.',
+    width:10,height:7,
+    entities:[
+      O('PLAYER',1,5),
+      W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
+      W('PLAYER','noun',3,2),W('NEAR','rel',4,2),W('TEXT','noun',5,2),W('IS','op',6,2),
+      W('WIN','prop',7,5)
+    ]
+  },
+  {
+    id:26, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'Documentation Has Become Self-Aware', mechanic:'TEXT IS YOU',
+    hint:'TEXT is already WIN. Give the paperwork control and it will approve itself.',
+    width:9,height:8,
+    entities:[
+      O('PLAYER',1,6),
+      W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
+      W('TEXT','noun',5,0),W('IS','op',6,0),W('WIN','prop',7,0),
+      W('TEXT','noun',1,2),W('IS','op',2,2),
+      W('YOU','prop',3,5)
+    ]
+  },
+  {
+    id:27, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'The Sentence Walked Away', mechanic:'TEXT IS MOVE',
+    hint:'TEXT is WIN. Complete TEXT IS MOVE, then let the paperwork come to you.',
+    width:10,height:7,
+    entities:[
+      O('PLAYER',1,5),
+      {...W('PLAYER','noun',6,0),dir:'left'},{...W('IS','op',7,0),dir:'left'},{...W('YOU','prop',8,0),dir:'left'},
+      {...W('TEXT','noun',6,1),dir:'left'},{...W('IS','op',7,1),dir:'left'},{...W('WIN','prop',8,1),dir:'left'},
+      {...W('TEXT','noun',3,2),dir:'left'},{...W('IS','op',4,2),dir:'left'},
+      {...W('MOVE','prop',5,4),dir:'left'},
+      {...W('ROCK','noun',8,5),dir:'left'}
+    ]
+  },
+  {
+    id:28, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'Nobody Is Here', mechanic:'EMPTY IS WIN',
+    hint:'Complete EMPTY IS WIN. Apparently absence now qualifies as a destination.',
+    width:9,height:7,
+    entities:[
+      O('PLAYER',1,5),
+      W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
+      W('EMPTY','noun',2,2),W('IS','op',3,2),
+      W('WIN','prop',4,5)
+    ]
+  },
+  {
+    id:29, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'The Room Has Been Promoted', mechanic:'LEVEL IS WIN',
+    hint:'Steal WIN from FLAG IS WIN and give it to the entire LEVEL.',
+    width:10,height:7,
+    entities:[
+      O('PLAYER',1,5),O('FLAG',8,5),
+      ...V('WALL',7,0,6),
+      W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
+      W('WALL','noun',4,0),W('IS','op',5,0),W('STOP','prop',6,0),
+      W('LEVEL','noun',3,1),W('IS','op',4,1),
+      W('FLAG','noun',3,4),W('IS','op',4,4),W('WIN','prop',5,4)
+    ]
+  },
+  {
+    id:30, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
+    title:'RULE IS WORLD', mechanic:'TEXT IS YOU → LEVEL IS WIN',
+    hint:'PLAYER cannot reach the final form. Give control to TEXT, then move the missing word into LEVEL IS _.',
+    width:10,height:8,
+    entities:[
+      O('PLAYER',1,6),
+      ...V('WALL',7,0,7),
+      W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
+      W('WALL','noun',0,1),W('IS','op',1,1),W('STOP','prop',2,1),
+      W('TEXT','noun',1,5),W('IS','op',2,5),W('YOU','prop',5,5),
+      W('LEVEL','noun',8,0),W('IS','op',8,1),W('WIN','prop',8,3)
+    ]
   }
 ];
 

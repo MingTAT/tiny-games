@@ -69,3 +69,19 @@ Examples:
 - “Physics would like to clarify that it was not consulted.”
 
 The absurdity should support the rule-breaking fantasy rather than merely decorate it.
+
+
+## World 5 — THE RULEBOOK HAS ESCAPED
+
+| # | Room | Intended realization |
+|---|---|---|
+| 25 | Words Count as Things | `TEXT` is a noun that can participate in conditional grammar. |
+| 26 | Documentation Has Become Self-Aware | Word blocks themselves can become `YOU`. |
+| 27 | The Sentence Walked Away | Word blocks can receive `MOVE`; grammar can physically wander away. |
+| 28 | Nobody Is Here | `EMPTY` can be the subject of a rule. Absence can become `WIN`. |
+| 29 | The Room Has Been Promoted | `LEVEL` can receive a property; victory can belong to the room itself. |
+| 30 | RULE IS WORLD | Use ordinary control to create `TEXT IS YOU`, then use the controlled text to complete `LEVEL IS WIN`. |
+
+World 5 changes the question from “what does this object do?” to “what counts as an object at all?”
+
+The final room is intentionally compact. Its difficulty is conceptual rather than spatial.

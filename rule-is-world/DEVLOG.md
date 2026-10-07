@@ -42,3 +42,20 @@ Added:
 - regression routes for every room
 
 The next major engine milestone is meta-grammar: `TEXT`, `EMPTY`, and `LEVEL`.
+
+
+## Campaign v2 — World 5
+
+Added six meta rooms, bringing the campaign to 30 rooms.
+
+Engine changes:
+
+- `TEXT` can be targeted by rules and conditions.
+- text blocks can receive `YOU`, `WIN`, `MOVE`, `STOP`, and other ordinary properties.
+- `TEXT IS <noun>` can turn word blocks into ordinary objects.
+- `EMPTY` is supported as a meta subject for tile-level properties such as `WIN` and `STOP`.
+- `LEVEL IS WIN` is supported as a global room-level condition.
+- conditional relations can target text (`NEAR TEXT`, `ON TEXT`, `FACING TEXT`).
+- autonomous movement now works for word blocks as well as ordinary objects.
+
+The final room combines `TEXT IS YOU` with `LEVEL IS WIN` so the player finishes the campaign by controlling the rulebook rather than the avatar.
