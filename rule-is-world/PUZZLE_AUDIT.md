@@ -20,8 +20,8 @@ This release keeps the existing **30 rooms** and focuses on making their rules r
 
 | Priority | Rooms | Why these deserve deliberate playtesting |
 |---|---|---|
-| High | 07, 09 | Their known solutions take only three or four moves. They may teach the concept, but not yet develop it. |
-| High | 26–30 | The meta finale currently resolves quickly. Verify that control of TEXT feels like a change in thinking, not a mechanical trick. |
+| Revised v4 | 07, 09 | 07 now needs two rule edits; 09 builds two rules from a single chain push. Human playtest still pending. |
+| Partially revised v4 | 26–30 | 26, 29, 30 redesigned; 27–28 intentionally remain short conceptual introductions. Human playtest pending. |
 | High | 17, 22 | The longer input sequences may contain unnecessary walking or object shuffling. |
 | Medium | 03, 06, 12, 18 | Check whether players actually combine insights or merely follow the visual arrangement. |
 | Medium | 19–21 | Observe whether players understand that a conditional rule can be written but not yet in effect. |
@@ -36,3 +36,10 @@ This release keeps the existing **30 rooms** and focuses on making their rules r
 5. Remove pointless travel before increasing the map's size.
 
 The aim is not longer levels. It is better surprises per move.
+
+
+## v4 evidence and limitations
+
+The redesigned rooms now have intermediate assertions in the regression test, so it is harder for a future code change to silently turn them back into trivial wins. The v4 regression records both a functioning solution and the intended change-of-rule sequence.
+
+Still open: 27–28 could use a richer second use of TEXT MOVE / EMPTY, and new players must independently test whether hints disclose too much. This release does not claim the engine has complete commercial-game rule semantics.

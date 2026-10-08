@@ -40,3 +40,13 @@ button:focus-visible{outline:3px solid #ba4f37;outline-offset:3px}
 
 .scroll-cue{display:none;text-align:center;font-size:10px;color:#776958;margin:10px 0 0;font-style:italic}
 @media(max-width:680px){.scroll-cue{display:block}}
+
+
+/* WORLD 5: the actual behavior of words and empty squares is visible. */
+.word.has-you{outline:3px dashed #72b3ef;outline-offset:1px;z-index:2}
+.word.has-you::before{content:'ME';position:absolute;top:-9px;right:-5px;padding:0 2px;background:#3378ad;color:#fff;font-size:7px;line-height:12px;transform:rotate(8deg)}
+.word.has-win{background:#f9dfa0;border-color:#a76a24;box-shadow:0 0 0 2px #e8c66c,2px 3px 0 rgba(0,0,0,.22)}
+.board.text-you{border-color:#628aab;box-shadow:0 0 0 3px rgba(77,146,202,.28),inset 0 0 0 2px rgba(255,255,255,.04)}
+.cell.empty-win::after{content:'★';position:absolute;inset:0;display:grid;place-items:center;color:rgba(250,222,129,.4);font-size:17px;pointer-events:none}
+.board.level-win{border-color:#ffd061;box-shadow:0 0 0 5px #efc967,inset 0 0 0 2px #f9edc5}
+@media(prefers-reduced-motion:reduce){.word.has-you,.board.level-win{animation:none}}

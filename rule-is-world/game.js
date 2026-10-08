@@ -55,6 +55,14 @@ const JOKES = [
   'The sentence has been promoted to infrastructure.'
 ];
 
+const MILESTONE_JOKES = {
+  7: 'STONE EMPLOYEES: STOP permit revoked. WALL EMPLOYEES: promoted to YOU. Payroll is in flames.',
+  9: 'Two forms were approved in one shove. HR has declared this a system outage.',
+  26: 'The paperwork finished a job that its human author could not.',
+  29: 'The entire ROOM was promoted. No individual employee received a raise.',
+  30: 'The final rule was filed by the rulebook itself. There is no appeals process.'
+};
+
 const STATUS = {
   original:[
     'Everything is still annoyingly grammatical.',
@@ -91,9 +99,9 @@ const NUDGES = [
   'A WIN word does not have to work for its current noun.',
   'Maybe your own noun needs more than one job.',
   'There are two separate problems in this corridor.',
-  'Your body is stranded. Another kind of body is not.',
+  'A wall with a new job title is still surrounded by solid rocks.',
   'The other side already has a candidate for YOU.',
-  'That rock is on the other side for a reason.',
+  'A row of movable words can file two rules in one push.',
   'Objects inherit the properties of their current name.',
   'The barrier consists of many objects with one name.',
   'A change of identity may unlock another change.',
@@ -110,11 +118,11 @@ const NUDGES = [
   'A source can generate its own tools.',
   'The target has no obligation to remain stationary.',
   'Word blocks are also physical objects in this room.',
-  'The documentation could become a playable character.',
+  'The word on the far side has the correct clearance. You do not.',
   'What if the sentence walks away from you?',
   'Empty squares are part of the world, too.',
-  'The room itself could have a property.',
-  'Your body cannot reach the final sentence. Your words can.'
+  'First cancel the rock’s STOP permit, then rewrite the room’s employment contract.',
+  'A rock prevents the final word from moving upward. Then the words themselves must take over.'
 ];
 
 function loadSolved(){
@@ -216,13 +224,19 @@ function renderRules(){
 }
 
 function renderBoard(){
-  const lvl=LEVELS[currentIndex]; UI.board.innerHTML=''; UI.board.style.gridTemplateColumns=`repeat(${lvl.width},var(--cell))`;
+  const lvl=LEVELS[currentIndex]; UI.board.innerHTML='';
+  UI.board.classList.toggle('level-win',engine.metaHasProperty('LEVEL','WIN'));
+  UI.board.classList.toggle('text-you',engine.metaHasProperty('TEXT','YOU'));
+  UI.board.style.gridTemplateColumns=`repeat(${lvl.width},var(--cell))`;
   for(let y=0;y<lvl.height;y++) for(let x=0;x<lvl.width;x++){
     const cell=document.createElement('div'); cell.className='cell';
+    if(engine.metaHasProperty('EMPTY','WIN') && engine.at(x,y).length===0) cell.classList.add('empty-win');
     engine.at(x,y).forEach((e,i)=>{
       const el=document.createElement('div'); el.className='entity';
       if(e.type==='word'){
         el.classList.add('word',e.kind);
+        if(engine.isYou(e)) el.classList.add('has-you');
+        if(engine.isWin(e)) el.classList.add('has-win');
         if(engine.activeWordIds.has(e.id)) el.classList.add('live');
         if(['TEXT','EMPTY','LEVEL'].includes(e.word)) el.classList.add('meta');
         el.textContent=e.word;
@@ -282,11 +296,11 @@ function showWin(){
   if(lvl.id===30){
     UI.winTitle.textContent='RULE IS WORLD';
     UI.winText.textContent=`The rulebook escaped containment in ${engine.steps} bad decisions.`;
-    UI.winJoke.textContent='The rules were never outside the world. Please return all grammar to its original location before leaving.';
+    UI.winJoke.textContent='The rulebook filed its own emancipation papers. Approved by the rulebook.';
   } else {
     UI.winTitle.textContent=lvl.title;
     UI.winText.textContent=`Resolved in ${engine.steps} bad decision${engine.steps===1?'':'s'}.`;
-    UI.winJoke.textContent=pick(JOKES,engine.steps+lvl.id);
+    UI.winJoke.textContent=MILESTONE_JOKES[lvl.id]||pick(JOKES,engine.steps+lvl.id);
   }
   UI.nextBtn.hidden=currentIndex>=LEVELS.length-1;
   UI.winOverlay.hidden=false;

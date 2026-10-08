@@ -175,3 +175,18 @@ node tests/engine.spec.js
 The campaign regression suite runs a known-good solution through all 30 rooms and checks the meta-rule features introduced in World 5. The engine tests cover atomic pushing, multiple `YOU`, rule feedback, exact undo, orientation and cyclic transformation.
 
 The frozen-text design check uses a bounded search. It is not a mathematical proof that no alternative bypass exists. See `PUZZLE_AUDIT.md` for the outstanding design questions.
+
+
+## Design Pass v4 — revised puzzle architecture
+
+Five rooms were revised structurally rather than merely enlarged:
+
+- **07** — revoke `ROCK IS STOP` before transferring `YOU` to the wall (two distinct rule edits).
+- **09** — a single push *chain* first creates `ROCK IS WIN`, then creates `FLAG IS WIN` and `ROCK IS PLAYER` together (a deliberately misleading intermediate rule).
+- **26** — `TEXT IS YOU` no longer wins automatically; control a word beyond an uncrossable barrier to reach the flag.
+- **29** — a stone gate requires revoking `ROCK IS STOP` before promoting the whole level with `LEVEL IS WIN`.
+- **30** — finale now requires cancelling a STOP rule, giving agency to TEXT, then moving the remote WIN word into the LEVEL sentence.
+
+The other 25 rooms remain available, preserving progress identifiers. `tests/validate.js` now asserts intermediate rule milestones for the redesigned rooms, not only victory.
+
+The game UI distinguishes text that is YOU, empty WIN tiles, and the whole LEVEL becoming WIN. The design is still a work in progress: automated routes are not human playtests.

@@ -76,3 +76,12 @@ The campaign remains 30 rooms. Instead of creating more rooms, this pass focuses
 - Cyclic noun changes stop at a repeated world identity rather than an arbitrary extra transformation.
 - Narrow screens can scroll across oversized rooms.
 - Engine edge-case tests have been added alongside the 30-room campaign regression suite.
+
+
+## Design Pass v4
+
+- Rebuilt rooms 07, 09, 26, 29 and 30 around multi-stage semantic changes, not extra walking.
+- Stopped room 26 from auto-winning when TEXT gets YOU.
+- Made room 30 require three distinct semantic phases.
+- Added rule-sequence assertions and distinct visual feedback for TEXT IS YOU, EMPTY IS WIN and LEVEL IS WIN.
+- Kept all room IDs stable for saved progress.

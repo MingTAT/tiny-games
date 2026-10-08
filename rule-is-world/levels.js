@@ -88,15 +88,16 @@ const LEVELS = [
   // WORLD 2 — YOU ARE NOT WHO HR SAID YOU ARE
   {
     id:7, world:2, chapter:'YOU ARE NOT WHO HR SAID YOU ARE',
-    title:'Give Control Away', mechanic:'TRANSFER YOU',
-    hint:'Move YOU one square upward. Your old body will stop responding immediately.',
+    title:'Department of Wall Promotions', mechanic:'BREAK STOP → TRANSFER YOU',
+    hint:'The entire wall wants a new job, but the stone barricade on the other side still has a STOP certificate. Revoke it first.',
     width:9,height:7,
     entities:[
       O('PLAYER',1,5), O('FLAG',7,5),
-      ...V('WALL',6,0,6),
+      ...V('WALL',6,0,6), ...V('ROCK',7,0,6),
       W('WALL','noun',2,1),W('IS','op',2,2),
       W('PLAYER','noun',0,4),W('IS','op',1,4),W('YOU','prop',2,4),
-      W('WALL','noun',4,0),W('IS','op',5,0),W('STOP','prop',6,0),
+      W('ROCK','noun',3,3),W('IS','op',4,3),W('STOP','prop',5,3),
+      W('WALL','noun',3,0),W('IS','op',4,0),W('STOP','prop',5,0),
       W('FLAG','noun',6,1),W('IS','op',7,1),W('WIN','prop',8,1)
     ]
   },
@@ -117,17 +118,17 @@ const LEVELS = [
   },
   {
     id:9, world:2, chapter:'YOU ARE NOT WHO HR SAID YOU ARE',
-    title:'Career Change', mechanic:'NOUN → NOUN',
-    hint:'The rock is already where a player needs to be. Change its job title.',
+    title:'A Very Efficient Restructuring', mechanic:'PUSH CHAIN → TWO RULES',
+    hint:'The paperwork forms a queue. Moving the words in the correct order can both hire a rock and authorize the flag.',
     width:10,height:7,
     entities:[
       O('PLAYER',1,5),O('ROCK',7,5),O('FLAG',8,5),
       ...V('WALL',5,0,6),
       W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
       W('WALL','noun',5,0),W('IS','op',6,0),W('STOP','prop',7,0),
-      W('ROCK','noun',0,2),W('IS','op',1,2),
-      W('PLAYER','noun',2,4),
-      W('FLAG','noun',7,1),W('IS','op',8,1),W('WIN','prop',9,1)
+      W('FLAG','noun',0,2),W('IS','op',1,2),
+      W('ROCK','noun',0,3),W('IS','op',1,3),
+      W('WIN','prop',2,4),W('PLAYER','noun',2,5)
     ]
   },
   {
@@ -354,15 +355,17 @@ const LEVELS = [
   },
   {
     id:26, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
-    title:'Documentation Has Become Self-Aware', mechanic:'TEXT IS YOU',
-    hint:'TEXT is already WIN. Give the paperwork control and it will approve itself.',
-    width:9,height:8,
+    title:'Documentation Has Become Self-Aware', mechanic:'TEXT IS YOU → MOVE THE TEXT',
+    hint:'TEXT IS YOU is only the beginning. The human cannot cross the barrier, but a letter on the other side can.',
+    width:12,height:8,
     entities:[
-      O('PLAYER',1,6),
+      O('PLAYER',1,6),O('FLAG',10,5),
+      ...V('WALL',6,0,7),
       W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
-      W('TEXT','noun',5,0),W('IS','op',6,0),W('WIN','prop',7,0),
-      W('TEXT','noun',1,2),W('IS','op',2,2),
-      W('YOU','prop',3,5)
+      W('WALL','noun',0,1),W('IS','op',1,1),W('STOP','prop',2,1),
+      W('FLAG','noun',7,0),W('IS','op',8,0),W('WIN','prop',9,0),
+      W('TEXT','noun',1,2),W('IS','op',2,2),W('YOU','prop',3,5),
+      W('ROCK','noun',9,5)
     ]
   },
   {
@@ -393,30 +396,32 @@ const LEVELS = [
   },
   {
     id:29, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
-    title:'The Room Has Been Promoted', mechanic:'LEVEL IS WIN',
-    hint:'Steal WIN from FLAG IS WIN and give it to the entire LEVEL.',
+    title:'The Room Has Been Promoted', mechanic:'REVOKE STOP → LEVEL IS WIN',
+    hint:'The missing WIN is on probation behind stone. Cancel ROCK IS STOP before granting the entire LEVEL the right to win.',
     width:10,height:7,
     entities:[
       O('PLAYER',1,5),O('FLAG',8,5),
-      ...V('WALL',7,0,6),
+      ...V('WALL',7,0,6), O('ROCK',5,2),O('ROCK',5,3),
       W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
       W('WALL','noun',4,0),W('IS','op',5,0),W('STOP','prop',6,0),
+      W('ROCK','noun',0,3),W('IS','op',1,3),W('STOP','prop',2,3),
       W('LEVEL','noun',3,1),W('IS','op',4,1),
       W('FLAG','noun',3,4),W('IS','op',4,4),W('WIN','prop',5,4)
     ]
   },
   {
     id:30, world:5, chapter:'THE RULEBOOK HAS ESCAPED',
-    title:'RULE IS WORLD', mechanic:'TEXT IS YOU → LEVEL IS WIN',
-    hint:'PLAYER cannot reach the final form. Give control to TEXT, then move the missing word into LEVEL IS _.',
+    title:'RULE IS WORLD', mechanic:'REVOKE STOP → TEXT IS YOU → LEVEL IS WIN',
+    hint:'Revoke the rock’s STOP privilege first. Your human body cannot cross the wall; the moving words must carry WIN through to LEVEL IS.',
     width:10,height:8,
     entities:[
-      O('PLAYER',1,6),
+      O('PLAYER',1,6), O('ROCK',8,3),
       ...V('WALL',7,0,7),
       W('PLAYER','noun',0,0),W('IS','op',1,0),W('YOU','prop',2,0),
       W('WALL','noun',0,1),W('IS','op',1,1),W('STOP','prop',2,1),
+      W('ROCK','noun',3,2),W('IS','op',4,2),W('STOP','prop',5,2),
       W('TEXT','noun',1,5),W('IS','op',2,5),W('YOU','prop',5,5),
-      W('LEVEL','noun',8,0),W('IS','op',8,1),W('WIN','prop',8,3)
+      W('LEVEL','noun',8,0),W('IS','op',8,1),W('WIN','prop',8,5)
     ]
   }
 ];
