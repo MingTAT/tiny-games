@@ -22,7 +22,7 @@ It is not meant to be Sokoban with sentences drawn on top of it.
 
 ## Campaign
 
-The current build contains **30 rooms across five worlds**.
+The current build contains **30 rooms across five worlds**. The current polish pass improves feedback and puzzle usability without adding more rooms.
 
 ### World 1 — PLEASE DO NOT TOUCH THE GRAMMAR
 
@@ -128,7 +128,18 @@ R                  reset
 Esc                level select
 ```
 
-Touch arrows are shown on narrow screens.
+Touch arrows are shown on narrow screens. Wider rooms can be scrolled horizontally.
+
+## Reading the room
+
+Live sentences have a warm outline on the board. The rule panel distinguishes **IN EFFECT** from **WAITING** when a rule depends on `ON`, `NEAR`, or `FACING`.
+
+If you create or revoke a sentence, a small incident report appears below the board.
+
+Hints are **opt-in**. Each room has two stages: a gentle nudge, then a more explicit clue. The original clue no longer appears automatically at the top of every room.
+
+Solved rooms are marked in the level menu; your personal best step count is saved locally in the browser. No accounts or internet connection are needed.
+
 
 ## Run
 
@@ -144,10 +155,12 @@ rule-is-world/
 ├── levels.js
 ├── game.js
 ├── LEVEL_DESIGN.md
+├── PUZZLE_AUDIT.md
 ├── DEVLOG.md
 ├── README.md
 └── tests/
-    └── validate.js
+    ├── validate.js
+    └── engine.spec.js
 ```
 
 ## Validation
@@ -156,6 +169,9 @@ With Node installed:
 
 ```bash
 node tests/validate.js
+node tests/engine.spec.js
 ```
 
-The regression suite runs a known-good solution through all 30 rooms and checks the meta-rule features introduced in World 5.
+The campaign regression suite runs a known-good solution through all 30 rooms and checks the meta-rule features introduced in World 5. The engine tests cover atomic pushing, multiple `YOU`, rule feedback, exact undo, orientation and cyclic transformation.
+
+The frozen-text design check uses a bounded search. It is not a mathematical proof that no alternative bypass exists. See `PUZZLE_AUDIT.md` for the outstanding design questions.

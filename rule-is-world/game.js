@@ -6,7 +6,9 @@ const UI = {
   worldList: document.getElementById('worldList'),
   chapter: document.getElementById('chapterLabel'),
   title: document.getElementById('levelTitle'),
-  hint: document.getElementById('levelHint'),
+  hintBtn: document.getElementById('hintBtn'),
+  hintPanel: document.getElementById('hintPanel'),
+  ruleChange: document.getElementById('ruleChange'),
   steps: document.getElementById('stepCount'),
   status: document.getElementById('status'),
   menuBtn: document.getElementById('menuBtn'),
@@ -77,6 +79,43 @@ let engine = null;
 let soundEnabled = false;
 let audioCtx = null;
 let solved = loadSolved();
+let bestSteps = loadBestSteps();
+let hintStage = 0;
+
+// First hints teach how to inspect the room. Second hints are the original,
+// more explicit level-specific design notes.
+const NUDGES = [
+  'The barrier is continuous. What sentence makes it solid?',
+  'The yellow object has no reason to be a goal yet.',
+  'The rock knows how to be stubborn, but not how to move.',
+  'A WIN word does not have to work for its current noun.',
+  'Maybe your own noun needs more than one job.',
+  'There are two separate problems in this corridor.',
+  'Your body is stranded. Another kind of body is not.',
+  'The other side already has a candidate for YOU.',
+  'That rock is on the other side for a reason.',
+  'Objects inherit the properties of their current name.',
+  'The barrier consists of many objects with one name.',
+  'A change of identity may unlock another change.',
+  'Ask whether anything on the board is actually WIN.',
+  'The only body in the room might also be the prize.',
+  'An obstacle and a goal do not have to be different things.',
+  'WIN has been assigned, but perhaps to the wrong thing.',
+  'A key and a locked door have a natural disagreement.',
+  'Preserving the current winning sentence may be the trap.',
+  'Look for two objects sharing a cell.',
+  'NEAR does not require two things to overlap.',
+  'Facing a wall is not the same as entering it.',
+  'The crucial object is currently inside another object.',
+  'A source can generate its own tools.',
+  'The target has no obligation to remain stationary.',
+  'Word blocks are also physical objects in this room.',
+  'The documentation could become a playable character.',
+  'What if the sentence walks away from you?',
+  'Empty squares are part of the world, too.',
+  'The room itself could have a property.',
+  'Your body cannot reach the final sentence. Your words can.'
+];
 
 function loadSolved(){
   try { return new Set(JSON.parse(localStorage.getItem('rule-is-world-solved') || '[]')); }
@@ -84,6 +123,23 @@ function loadSolved(){
 }
 function saveSolved(){
   try { localStorage.setItem('rule-is-world-solved', JSON.stringify([...solved])); } catch {}
+}
+function loadBestSteps(){
+  try {
+    const value=JSON.parse(localStorage.getItem('rule-is-world-best') || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch { return {}; }
+}
+function saveBestSteps(){
+  try { localStorage.setItem('rule-is-world-best',JSON.stringify(bestSteps)); } catch {}
+}
+function renderHints(){
+  const lvl=LEVELS[currentIndex];
+  UI.hintBtn.disabled=hintStage===2;
+  UI.hintBtn.textContent=hintStage===0?'unseal hint 1 of 2':hintStage===1?'unseal hint 2 of 2':'file fully unsealed';
+  UI.hintPanel.textContent=hintStage===0
+    ?'Two hints are available. The first is gentle; the second is rather rude.'
+    :hintStage===1 ? NUDGES[lvl.id-1] : lvl.hint;
 }
 function pick(arr, salt=0){ return arr[Math.abs((salt*17 + currentIndex*7)) % arr.length]; }
 
@@ -108,13 +164,15 @@ function renderMenu(){
     const meta=WORLD_META[world];
     const section=document.createElement('section'); section.className='world-section';
     const head=document.createElement('div'); head.className='world-head';
-    head.innerHTML=`<div><p class="stamp">WORLD ${world}</p><h3>${meta.title}</h3></div><p>${meta.note}</p>`;
+    const rooms=LEVELS.filter(l=>l.world===world);
+    const done=rooms.filter(l=>solved.has(l.id)).length;
+    head.innerHTML=`<div><p class="stamp">WORLD ${world} · ${done}/${rooms.length} FORMS APPROVED</p><h3>${meta.title}</h3></div><p>${meta.note}</p>`;
     const grid=document.createElement('div'); grid.className='level-grid';
     LEVELS.filter(l=>l.world===world).forEach(level=>{
       const idx=LEVELS.indexOf(level);
       const btn=document.createElement('button'); btn.type='button';
       btn.className='level-card'+(solved.has(level.id)?' solved':'');
-      btn.innerHTML=`<span class="num">FORM ${String(level.id).padStart(2,'0')}</span><strong>${level.title}</strong><span class="mechanic">${level.mechanic}</span>`;
+      btn.innerHTML=`<span class="num">FORM ${String(level.id).padStart(2,'0')}</span><strong>${level.title}</strong><span class="mechanic">${level.mechanic}</span>${bestSteps[level.id] ? `<span class="best-steps">PERSONAL RECORD: ${bestSteps[level.id]} BAD DECISIONS</span>` : ''}`;
       btn.addEventListener('click',()=>startLevel(idx)); grid.appendChild(btn);
     });
     section.append(head,grid); UI.worldList.appendChild(section);
@@ -123,6 +181,7 @@ function renderMenu(){
 
 function startLevel(index){
   currentIndex=index; engine=new RuleWorldEngine(LEVELS[index]);
+  hintStage=0; renderHints();
   UI.menuView.hidden=true; UI.gameView.hidden=false; UI.winOverlay.hidden=true;
   render(); beep(155,.06);
 }
@@ -143,7 +202,15 @@ function renderRules(){
     const p=document.createElement('div'); p.className='rule-pill'; p.textContent='NO RULES. THIS SEEMS BAD.'; UI.rules.appendChild(p); return;
   }
   engine.rules.forEach((r,i)=>{
-    const div=document.createElement('div'); div.className='rule-pill'; div.textContent=ruleText(r);
+    const div=document.createElement('div'); div.className='rule-pill';
+    let conditionStatus='';
+    if(r.condition){
+      const active=engine.entities.some(e=>engine.ruleMatchesEntity(r,e));
+      div.classList.add(active?'condition-on':'condition-off');
+      conditionStatus=active?'  [IN EFFECT]':'  [WAITING]';
+    }
+    div.textContent=ruleText(r)+conditionStatus;
+    if(engine.lastRuleEvent?.added?.some(a=>JSON.stringify(a)===JSON.stringify(r))) div.classList.add('new-rule');
     div.style.transform=`rotate(${i%2?-.6:.35}deg)`; UI.rules.appendChild(div);
   });
 }
@@ -155,9 +222,15 @@ function renderBoard(){
     engine.at(x,y).forEach((e,i)=>{
       const el=document.createElement('div'); el.className='entity';
       if(e.type==='word'){
-        el.classList.add('word',e.kind); if(['TEXT','EMPTY','LEVEL'].includes(e.word)) el.classList.add('meta'); el.textContent=e.word;
+        el.classList.add('word',e.kind);
+        if(engine.activeWordIds.has(e.id)) el.classList.add('live');
+        if(['TEXT','EMPTY','LEVEL'].includes(e.word)) el.classList.add('meta');
+        el.textContent=e.word;
       } else {
-        el.classList.add('object',e.noun.toLowerCase()); el.textContent=GLYPHS[e.noun]||'●'; el.title=e.noun;
+        el.classList.add('object',e.noun.toLowerCase());
+        if(engine.isYou(e)) el.classList.add('has-you');
+        if(engine.isWin(e)) el.classList.add('has-win');
+        el.textContent=GLYPHS[e.noun]||'●'; el.title=e.noun;
       }
       if(i>0) el.style.transform=`translate(${i*2}px,${-i*2}px) rotate(${i%2?2:-2}deg)`;
       cell.appendChild(el);
@@ -167,6 +240,14 @@ function renderBoard(){
 }
 
 function renderStatus(){
+  const ev=engine.lastRuleEvent;
+  UI.ruleChange.textContent='';
+  if(ev){
+    const pieces=[];
+    if(ev.added.length) pieces.push('FILED: '+ev.added.slice(0,2).map(ruleText).join(' / '));
+    if(ev.removed.length) pieces.push('REVOKED: '+ev.removed.slice(0,2).map(ruleText).join(' / '));
+    UI.ruleChange.textContent=pieces.join('   |   ');
+  }
   if(engine.lost) UI.status.textContent=pick(STATUS.lost,engine.steps);
   else if(engine.changedRules) UI.status.textContent=pick(STATUS.changed,engine.steps);
   else UI.status.textContent=pick(STATUS.original,engine.steps);
@@ -177,9 +258,10 @@ function render(){
   const lvl=LEVELS[currentIndex];
   UI.chapter.textContent=`WORLD ${lvl.world} // ${lvl.chapter}`;
   UI.title.textContent=`${String(lvl.id).padStart(2,'0')} · ${lvl.title}`;
-  UI.hint.textContent=lvl.hint; UI.steps.textContent=engine.steps;
+  UI.steps.textContent=engine.steps;
   UI.undoBtn.disabled=!engine.history.length;
   renderBoard(); renderRules(); renderStatus();
+  UI.winOverlay.hidden=!engine.won;
   if(engine.won) showWin();
 }
 
@@ -194,6 +276,9 @@ function move(dx,dy){
 
 function showWin(){
   const lvl=LEVELS[currentIndex]; solved.add(lvl.id); saveSolved();
+  if(!bestSteps[lvl.id] || engine.steps<bestSteps[lvl.id]){
+    bestSteps[lvl.id]=engine.steps; saveBestSteps();
+  }
   if(lvl.id===30){
     UI.winTitle.textContent='RULE IS WORLD';
     UI.winText.textContent=`The rulebook escaped containment in ${engine.steps} bad decisions.`;
@@ -208,6 +293,7 @@ function showWin(){
 }
 
 UI.menuBtn.addEventListener('click',showMenu);
+UI.hintBtn.addEventListener('click',()=>{hintStage=Math.min(2,hintStage+1);renderHints();});
 UI.undoBtn.addEventListener('click',()=>{if(engine&&engine.undo()){beep(95,.045);render();}});
 UI.resetBtn.addEventListener('click',()=>engine&&startLevel(currentIndex));
 UI.soundBtn.addEventListener('click',()=>{

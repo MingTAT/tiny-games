@@ -40,7 +40,7 @@
         <div>
           <p id="chapterLabel" class="stamp"></p>
           <h2 id="levelTitle"></h2>
-          <p id="levelHint" class="hint"></p>
+          <p class="hint">Classified puzzle file. Read the room before consulting the paperwork.</p>
         </div>
         <div class="decision-counter">
           <span>BAD DECISIONS</span>
@@ -53,7 +53,9 @@
           <div class="tape tape-a"></div>
           <div class="tape tape-b"></div>
           <div id="board" class="board" aria-label="Rule puzzle board"></div>
+          <p class="scroll-cue">← slide the paperwork sideways to inspect the whole room →</p>
           <p id="status" class="status" aria-live="polite"></p>
+          <div id="ruleChange" class="rule-change" aria-live="polite"></div>
           <div class="touch-controls" aria-label="Touch movement controls">
             <button data-move="up" type="button">↑</button>
             <div>
@@ -68,6 +70,11 @@
           <section class="rule-note">
             <p class="stamp">CURRENTLY TRUE, ALLEGEDLY</p>
             <div id="rules" class="rules"></div>
+          </section>
+          <section class="scribble-note case-file">
+            <p class="stamp">CLASSIFIED / THE HINT DEPARTMENT</p>
+            <button id="hintBtn" class="hint-btn" type="button">unseal hint 1 of 2</button>
+            <p id="hintPanel" class="hint-copy" aria-live="polite">There are two hints. Both are probably legally questionable.</p>
           </section>
           <section class="scribble-note">
             <p class="stamp">MOVING THE PROBLEM AROUND</p>
@@ -88,7 +95,7 @@
       </div>
     </section>
 
-    <div id="winOverlay" class="overlay" hidden>
+    <div id="winOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="winTitle" hidden>
       <div class="win-card">
         <div class="confetti-word">IS</div>
         <p class="stamp">GRAMMAR INCIDENT RESOLVED*</p>

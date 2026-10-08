@@ -15,3 +15,28 @@ button{font:inherit;color:inherit}.paper-noise{position:fixed;inset:0;pointer-ev
 @media(max-width:980px){.level-grid{grid-template-columns:repeat(2,1fr)}.game-layout{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:1fr 1fr}.rule-note{grid-row:span 2}}
 @media(max-width:680px){:root{--cell:42px}.app{width:min(100% - 12px,1240px);padding-top:9px}.topbar{align-items:flex-start;flex-direction:column}.top-actions{justify-content:flex-start}.level-grid{grid-template-columns:1fr}.world-head{align-items:flex-start;flex-direction:column}.game-heading{align-items:flex-start}.sidebar{display:flex}.touch-controls{display:block}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* POLISH PASS: make live sentences obvious while keeping the handmade look. */
+.word.live{border-color:#cf672f;box-shadow:0 0 0 2px rgba(244,211,124,.65),2px 3px 0 rgba(0,0,0,.22)}
+.rule-pill.new-rule{background:#fff2b2;border-left:4px solid #c14a35;animation:stamped .24s ease-out both}
+@keyframes stamped{from{opacity:.35;transform:scale(1.08) rotate(2deg)}to{opacity:1;transform:scale(1) rotate(0deg)}}
+.rule-change{min-height:18px;font-family:ui-monospace,monospace;color:#8b3730;font-weight:bold;font-size:11px;text-align:center;line-height:1.5;letter-spacing:.02em}
+.case-file{background:#e7e1b8;transform:rotate(.3deg)}
+.hint-btn{padding:8px 10px;margin:7px 0 9px;background:#f4ebc8;border:2px dashed #514b42;cursor:pointer;font-size:11px;font-weight:bold;text-transform:uppercase}
+.hint-btn:hover:not(:disabled){background:#fff7dc}
+.hint-btn:disabled{opacity:.6;cursor:default}
+.scribble-note .hint-copy{font-size:12px;line-height:1.55;color:#463c32;margin:0;white-space:normal}
+.best-steps{display:block;margin-top:9px;color:#667f47;font-size:9px;letter-spacing:.035em}
+button:focus-visible{outline:3px solid #ba4f37;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.rule-pill.new-rule{animation:none}.level-card{transition:none}}
+
+/* Rules have a physical status, not just a syntactic status. */
+.rule-pill.condition-on{border-left:4px solid #547f49}
+.rule-pill.condition-off{opacity:.58;border-left:4px dotted #73665b}
+.entity.has-you{outline:3px solid #477fbc;outline-offset:0}
+.entity.has-win{box-shadow:0 0 0 3px #e6bd54,2px 3px 0 rgba(0,0,0,.2)}
+.board-wrap{overflow-x:auto}
+.board{max-width:none}
+
+.scroll-cue{display:none;text-align:center;font-size:10px;color:#776958;margin:10px 0 0;font-style:italic}
+@media(max-width:680px){.scroll-cue{display:block}}

@@ -17,6 +17,8 @@ class RuleWorldEngine {
     this.won = false;
     this.lost = false;
     this.changedRules = false;
+    this.lastRuleEvent = null;
+    this.activeWordIds = new Set();
     this._initialRuleSignature = null;
     this.settle(false, {allowMake:false});
     this._initialRuleSignature = this.ruleSignature();
@@ -33,6 +35,7 @@ class RuleWorldEngine {
       won: this.won,
       lost: this.lost,
       changedRules: this.changedRules,
+      lastRuleEvent: this.lastRuleEvent ? JSON.parse(JSON.stringify(this.lastRuleEvent)) : null,
       nextId: this.nextId
     };
   }
@@ -43,8 +46,10 @@ class RuleWorldEngine {
     this.won = snap.won;
     this.lost = snap.lost;
     this.changedRules = snap.changedRules;
+    this.lastRuleEvent = snap.lastRuleEvent ? JSON.parse(JSON.stringify(snap.lastRuleEvent)) : null;
     this.nextId = snap.nextId || this.nextId;
-    this.settle(false, {allowMake:false});
+    // Restoring a snapshot must never rerun transforms, destruction or MAKE.
+    this.parseRules();
   }
 
   saveHistory() {
@@ -114,7 +119,14 @@ class RuleWorldEngine {
     }
 
     let found = [];
-    for (const line of lines) found.push(...this.parseLine(line));
+    this.activeWordIds = new Set();
+    for (const line of lines) {
+      const parsed = this.parseLine(line);
+      if (parsed.length) {
+        for (const word of line) this.activeWordIds.add(word.id);
+        found.push(...parsed);
+      }
+    }
     this.rules = this.dedupeRules(found);
 
     if (this._initialRuleSignature !== null && this.ruleSignature() !== this._initialRuleSignature) {
@@ -331,8 +343,14 @@ class RuleWorldEngine {
   }
 
   settle(checkWin=true, opts={allowMake:true}) {
+    const visitedIdentities = new Set();
     for (let pass=0; pass<8; pass++) {
       this.parseRules();
+      const identity = this.entities.map(e => `${e.id}:${e.type}:${e.noun || e.word}`).join('|');
+      // Cyclic transformations have no unique fixed point. Stop at the
+      // first repeated identity rather than applying an arbitrary extra pass.
+      if (visitedIdentities.has(identity)) break;
+      visitedIdentities.add(identity);
       if (!this.applyTransformations()) break;
     }
     this.parseRules();
@@ -465,6 +483,23 @@ class RuleWorldEngine {
   }
 
   tryMove(entity, dx, dy, trail=new Set()) {
+    // Treat the whole push chain as a transaction. A failed push must not
+    // move some boxes and leave the rest behind.
+    const before = this.entities.map(e => ({id:e.id, x:e.x, y:e.y, dir:e.dir}));
+    const moved = this.tryMoveChain(entity, dx, dy, trail);
+    if (!moved) {
+      const byId = new Map(before.map(e => [e.id,e]));
+      for (const e of this.entities) {
+        const old = byId.get(e.id);
+        e.x = old.x; e.y = old.y; e.dir = old.dir;
+      }
+      // Even a blocked attempted movement changes what YOU is facing.
+      entity.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
+    }
+    return moved;
+  }
+
+  tryMoveChain(entity, dx, dy, trail) {
     if (trail.has(entity.id)) return false;
     trail.add(entity.id);
 
@@ -486,12 +521,22 @@ class RuleWorldEngine {
     if (!movers.length) return false;
 
     this.saveHistory();
+    const beforeRules = this.rules.map(r => JSON.stringify(r));
+    // Move the leading YOU first: a YOU with PUSH cannot get pushed
+    // twice simply because another YOU was processed earlier.
+    movers.sort((a,b) => (b.x-a.x)*dx + (b.y-a.y)*dy);
     for (const mover of movers) this.tryMove(mover,dx,dy,new Set());
 
     this.steps += 1;
     this.settle(false,{allowMake:true});
     this.moveAutonomous();
     this.settle(true,{allowMake:true});
+    const previous = new Set(beforeRules);
+    const current = new Set(this.rules.map(r => JSON.stringify(r)));
+    this.lastRuleEvent = {
+      added: this.rules.filter(r => !previous.has(JSON.stringify(r))),
+      removed: beforeRules.filter(r => !current.has(r)).map(r => JSON.parse(r))
+    };
     return true;
   }
 

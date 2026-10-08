@@ -59,3 +59,20 @@ Engine changes:
 - autonomous movement now works for word blocks as well as ordinary objects.
 
 The final room combines `TEXT IS YOU` with `LEVEL IS WIN` so the player finishes the campaign by controlling the rulebook rather than the avatar.
+
+## Polish pass — reading, feedback, and reliable movement
+
+The campaign remains 30 rooms. Instead of creating more rooms, this pass focuses on the game already there.
+
+- Word blocks belonging to an active sentence are visibly marked.
+- Conditional rules show whether they currently apply to at least one object.
+- Newly filed or revoked sentences get an in-room notice.
+- Hints are revealed in two optional stages rather than printed in the header.
+- Personal best steps are recorded in browser storage.
+- Undo from a completed room correctly closes the victory overlay.
+- A failed push chain now rolls back every object's position; no partially moved chain.
+- Multiple `YOU` entities are processed front-to-back to avoid a pushable `YOU` moving twice.
+- Undo restores the exact snapshot rather than replaying destructive world effects.
+- Cyclic noun changes stop at a repeated world identity rather than an arbitrary extra transformation.
+- Narrow screens can scroll across oversized rooms.
+- Engine edge-case tests have been added alongside the 30-room campaign regression suite.
