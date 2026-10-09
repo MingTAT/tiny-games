@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WORDS CHANGE WORLDS — 规则解谜实验室</title>
+<meta name="description" content="一个独立制作的 Baba Is You 风格文字规则解谜游戏。直接用浏览器打开即可游玩。">
+<style>
+:root{color-scheme:dark;--bg:#0b1022;--panel:#141a30;--panel2:#1b2340;--line:#303c5e;--text:#f1f2ff;--muted:#a3b3d4;--accent:#b3f0dc;--gold:#f5d886}
+*{box-sizing:border-box}body{background:radial-gradient(ellipse at 12% 14%,#1d3156 0,transparent 37%),radial-gradient(ellipse at 85% 90%,#242148 0,transparent 35%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Microsoft Yahei",sans-serif;margin:0;min-height:100vh}
+.top{height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 24px;border-bottom:1px solid #2a3655;background:#0d1426ca}
+.brand{display:flex;align-items:center;gap:13px}.brand-icon{width:43px;height:43px;border-radius:13px;background:#b3f0dc;color:#142432;font-size:24px;display:grid;place-items:center;font-weight:1000;transform:rotate(-5deg)}.brand h1{margin:0;letter-spacing:2px;font-size:19px}.brand p{margin:4px 0 0;font-size:11px;color:#9cadce;letter-spacing:1.5px}.top-note{color:var(--muted);font-size:12px}.top-note b{color:var(--accent)}
+.layout{max-width:1640px;display:grid;grid-template-columns:226px minmax(550px,1fr) 268px;gap:18px;padding:20px;margin:auto}
+.panel{background:#131a2ee8;border:1px solid var(--line);border-radius:16px;min-width:0}.left{padding:16px 10px;max-height:calc(100vh - 112px);overflow:auto}.panel-label{color:#95a9d0;font-size:11px;text-transform:uppercase;letter-spacing:2.2px;font-weight:800;margin:8px 12px 16px}.level-list{display:flex;flex-direction:column;gap:6px}
+.level-btn{width:100%;background:none;border:1px solid transparent;text-align:left;border-radius:11px;padding:10px 11px;color:#b2c0e0;cursor:pointer;display:flex;gap:11px;align-items:center;transition:.18s;font:inherit}.level-btn:hover{background:#222c4b}.level-btn.active{color:#fff;background:#2b3758;border-color:#53648c}.lv-num{flex-shrink:0;display:grid;place-items:center;width:29px;height:29px;font-size:12px;font-weight:900;border-radius:8px;background:#263350;color:#b9c9e4}.level-btn.active .lv-num{background:#b3f0dc;color:#132536}.lv-content{min-width:0}.lv-title{font-size:12px;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lv-sub{display:block;color:#8da0c5;font-size:11px;margin-top:3px}.lv-check{margin-left:auto;font-size:15px;color:#aaf0cf}
+.center{min-width:0}.stage-info{display:flex;align-items:center;justify-content:space-between;margin:0 2px 12px;gap:10px}.stage-info h2{margin:0;font-size:24px;letter-spacing:1px}.stage-info p{margin:7px 0 0;color:var(--muted);font-size:13px}.stage-count{font-size:12px;color:#b4c4e3;white-space:nowrap;padding:8px 11px;border:1px solid #3d4a66;border-radius:100px}.game-wrap{background:#090f21;border:1px solid #3a4768;border-radius:16px;padding:9px;box-shadow:0 15px 50px #0006;position:relative;overflow:hidden}canvas{display:block;width:100%;aspect-ratio:4/3;border-radius:9px;outline:none;cursor:default;image-rendering:auto}
+.statusbar{margin:9px 3px 0;display:flex;justify-content:space-between;gap:7px;color:#8196bf;font-size:12px}.statusbar b{color:#d8e4ff}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.toolbtn{border:1px solid #3b4a70;background:#1c2641;color:#e0e9fa;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer}.toolbtn:hover{background:#293759;border-color:#6981b4}.toolbtn:disabled{opacity:.35;cursor:not-allowed}.toolbtn.primary{background:#b3f0dc;color:#142532;border-color:#b3f0dc}.toolbtn.primary:hover{background:#d3fff1}
+.help{color:#9aaccd;font-size:12px;line-height:1.8;margin-top:13px}.kbd{display:inline-block;border:1px solid #526081;background:#26314c;border-radius:5px;padding:0 6px;color:#d8e4ff;font-family:inherit;font-size:11px}
+.right{padding:16px 15px;align-self:start}.right h3{font-size:14px;margin:0 0 10px;color:#e9f0ff}.rules-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}.rule-row{background:#1f2946;padding:10px 9px;border:1px solid #344467;border-radius:9px;font-weight:900;font-size:12px;line-height:1.6;letter-spacing:.35px;word-break:break-word}.rule-row .subject{color:#ffafcc}.rule-row .verb{color:#fff1a9}.rule-row .result{color:#b8f3dc}.empty-rules{font-size:12px;color:#90a3c9;line-height:1.8}.hintbox{margin-top:18px;padding:14px;background:#26324d;border:1px solid #415170;border-radius:12px}.hintbox .h-title{font-size:12px;color:#eecf80;font-weight:900;letter-spacing:1.3px}.hintbox p{font-size:12px;line-height:1.8;color:#c8d6f1;margin:9px 0 0}.notice{margin-top:20px;font-size:11px;line-height:1.7;color:#8498be;border-top:1px solid #35415d;padding-top:13px}.right .mini{font-size:11px;color:#94aacd;line-height:1.7}
+.mobile-pad{display:none;margin:16px auto 0;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,52px);justify-content:center;gap:6px}.mobile-pad button{border:1px solid #647ca0;background:#263652;color:white;border-radius:12px;font-size:23px}.mobile-pad .up{grid-column:2;grid-row:1}.mobile-pad .left-arrow{grid-column:1;grid-row:2}.mobile-pad .down{grid-column:2;grid-row:2}.mobile-pad .right-arrow{grid-column:3;grid-row:2}
+.dialog-backdrop{position:fixed;inset:0;background:#061024d8;display:none;align-items:center;justify-content:center;z-index:20;padding:20px;backdrop-filter:blur(4px)}.dialog-backdrop.open{display:flex}.dialog{background:#202943;border:1px solid #5d709a;box-shadow:0 30px 90px #000a;width:min(520px,100%);border-radius:21px;padding:29px;text-align:center}.dialog .spark{font-size:38px}.dialog h2{margin:8px 0 5px;font-size:28px}.dialog p{color:#b5c6e3;line-height:1.9;font-size:14px}.dialog .toolbar{justify-content:center}
+footer{max-width:1620px;margin:0 auto;color:#687d9d;font-size:11px;text-align:center;padding:0 12px 22px}
+@media(max-width:1260px){.layout{grid-template-columns:195px minmax(490px,1fr)}.right{grid-column:2}.right .rules-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:790px){.top{padding:12px;height:auto}.top-note{display:none}.layout{padding:12px;display:flex;flex-direction:column}.left{order:3;max-height:240px}.center{order:1}.right{order:2}.stage-info h2{font-size:19px}.mobile-pad{display:grid}.help{text-align:center}.rule-row{font-size:11px}.brand h1{font-size:17px}.toolbtn{padding:11px 12px}}
+</style></head><body>
+<header class="top"><div class="brand"><div class="brand-icon">字</div><div><h1>WORDS CHANGE WORLDS</h1><p>文字不是说明书，它就是物理法则。</p></div></div><div class="top-note">25 个原创实验关卡 · <b>推词 · 改规则 · 变世界</b></div></header>
+<main class="layout">
+<aside class="panel left"><div class="panel-label">SELECT A LEVEL · 关卡</div><div id="level-list" class="level-list"></div></aside>
+<section class="center"><div class="stage-info"><div><h2 id="stage-title">规则的世界</h2><p id="stage-subtitle"></p></div><div id="stage-count" class="stage-count">01 / 25</div></div>
+<div class="game-wrap"><canvas id="board" tabindex="0" aria-label="文字规则解谜游戏画板" width="960" height="720"></canvas></div>
+<div class="statusbar"><span id="status">规则已载入</span><span id="turn-count">STEP 000</span></div>
+<div class="toolbar"><button class="toolbtn" id="undo" title="撤销 Z">↶ 撤销 Z</button><button class="toolbtn" id="redo" title="重做 Y">↷ 重做 Y</button><button class="toolbtn" id="restart" title="重玩 R">⟳ 重玩 R</button><button class="toolbtn" id="wait" title="等待一回合 空格">◷ 等待</button><button class="toolbtn primary" id="next">下一关 →</button></div>
+<div class="mobile-pad"><button class="up" data-dir="0" aria-label="向上">↑</button><button class="left-arrow" data-dir="3" aria-label="向左">←</button><button class="down" data-dir="2" aria-label="向下">↓</button><button class="right-arrow" data-dir="1" aria-label="向右">→</button></div>
+<div class="help">方向键 / <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> 移动 · <span class="kbd">Z</span> 撤销 · <span class="kbd">Y</span> 重做 · <span class="kbd">R</span> 重开 · <span class="kbd">空格</span> 等待</div>
+</section>
+<aside class="panel right"><div class="panel-label">ACTIVE RULES · 当前规则</div><h3>你移动文字，规则跟着改变</h3><div class="mini">横向从左到右、纵向从上到下组成有效的句子。发光的词块正在生效。</div><div class="rules-list" id="rules"></div>
+<div class="hintbox"><div class="h-title">✦ 本关观察</div><p id="hint"></p></div>
+<div class="notice">本项目是独立制作的规则解谜实验版，参考了《Baba Is You》的文字物理机制。不是官方版本；不包含原作的地图、音乐或美术资源。</div></aside>
+</main>
+<footer>MADE AS AN INDEPENDENT RULE-PUZZLE PROTOTYPE · 本地浏览器运行，无需注册、安装或联网</footer>
+<div class="dialog-backdrop" id="overlay"><div class="dialog"><div class="spark">✦ ✹ ✦</div><h2>规则被你改写了！</h2><p id="win-detail">关卡完成。</p><div class="toolbar"><button class="toolbtn" id="win-restart">再玩一次</button><button class="toolbtn primary" id="win-next">下一关 →</button></div></div></div>
+<script>
+/* Independent word-rule puzzle engine. No assets/code from Baba Is You. */
+(function (root) {
+  'use strict';
+  const NOUNS = new Set('BABA KEKE FLAG WALL ROCK WATER LAVA SKULL KEY DOOR GRASS TREE BELT STAR GHOST LOVE BOX ICE HEDGE BUG FLOWER TEXT ALL'.split(' '));
+  const PHYSICAL_NOUNS = [...NOUNS].filter(x => !['TEXT','ALL'].includes(x));
+  const PROPS = new Set('YOU YOU2 WIN STOP PUSH PULL DEFEAT SINK HOT MELT OPEN SHUT WEAK FLOAT TELE SHIFT SWAP MOVE SAFE STILL RED BLUE WORD UP RIGHT DOWN LEFT'.split(' '));
+  const VERBS = new Set(['IS','HAS','MAKE']);
+  const CONDITIONS = new Set(['ON','NEAR','FACING','WITHOUT']);
+  const WORDS = new Set([...NOUNS, ...PROPS, ...VERBS, ...CONDITIONS, 'AND', 'NOT', 'LONELY']);
+  const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];
+  const clone = data => JSON.parse(JSON.stringify(data));
+  const key = (x,y) => x+','+y;
+
+  function scanTokens(tokens, ids, start) {
+    let i = start;
+    const consume = word => tokens[i] === word ? (i++, true) : false;
+    const negate = () => { let count=0; while(consume('NOT')) count++; return Boolean(count%2); };
+    let lonely = consume('LONELY');
+    function readList(allowProps) {
+      const entries = [];
+      let need = true;
+      while (need) {
+        const neg = negate();
+        const value = tokens[i];
+        if (!value || !(NOUNS.has(value) || (allowProps && PROPS.has(value)))) return null;
+        entries.push({ value, neg }); i++;
+        if (tokens[i] === 'AND' && tokens[i+1] && (NOUNS.has(tokens[i+1]) || tokens[i+1] === 'NOT' || (allowProps && PROPS.has(tokens[i+1])))) i++;
+        else need = false;
+      }
+      return entries;
+    }
+    const subjects = readList(false);
+    if (!subjects) return [];
+    let cond = null;
+    if (CONDITIONS.has(tokens[i])) {
+      const type = tokens[i++], not = negate();
+      if (!NOUNS.has(tokens[i])) return [];
+      cond = { type, target: tokens[i++], not };
+    }
+    const verb = tokens[i++];
+    if (!VERBS.has(verb)) return [];
+    let targets = readList(verb === 'IS');
+    if (!targets) return [];
+    // A completed sentence may be the prefix of an unparseable tail.
+    const wordIds = ids.slice(start, i);
+    const rules = [];
+    for (const subject of subjects) for (const target of targets) {
+      if (verb !== 'IS' && PROPS.has(target.value)) continue;
+      rules.push({ subject:subject.value, subjectNot: subject.neg, verb,
+        target:target.value, targetNot:target.neg, lonely, cond, ids:wordIds });
+    }
+    return rules;
+  }
+
+  function parseRules(objects, width, height, wordIds=new Set()) {
+    const occupied = new Map();
+    for (const obj of objects) {
+      if (obj.type !== 'text' && !wordIds.has(obj.id)) continue;
+      const p = key(obj.x,obj.y);
+      if (!occupied.has(p)) occupied.set(p, []);
+      occupied.get(p).push(obj);
+    }
+    let allRules=[], activeIds = new Set(), signatures = new Set();
+    for (const [dx,dy] of [[1,0],[0,1]]) {
+      for (let y=0;y<height;y++) for(let x=0;x<width;x++) {
+        if (!occupied.has(key(x,y))) continue;
+        if (occupied.has(key(x-dx,y-dy))) continue;
+        const cells=[];
+        for (let cx=x,cy=y;cx>=0&&cy>=0&&cx<width&&cy<height&&occupied.has(key(cx,cy));cx+=dx,cy+=dy)
+          cells.push(occupied.get(key(cx,cy)));
+        if (cells.length < 3) continue;
+        const paths=[];
+        function collect(index, chosen, ids) {
+          if(paths.length>512) return;
+          if(index>=cells.length) { paths.push({ tokens:chosen, ids }); return; }
+          for (const ob of cells[index]) collect(index+1, [...chosen,ob.type==='text'?ob.word:ob.type.toUpperCase()], [...ids,ob.id]);
+        }
+        collect(0,[],[]);
+        for (const { tokens, ids } of paths) for(let start=0; start<=tokens.length-3;start++) {
+          // A NOT prefix belongs to the following noun; do not parse a
+          // contradictory sub-sentence starting *inside* that prefix.
+          if(start>0 && tokens[start-1]==='NOT')continue;
+          for (const rule of scanTokens(tokens,ids,start)) {
+            const signature = [rule.subject,rule.subjectNot,rule.verb,rule.target,rule.targetNot,rule.lonely,JSON.stringify(rule.cond),rule.ids.join(':')].join('|');
+            if (signatures.has(signature)) continue;
+            signatures.add(signature); allRules.push(rule);
+            rule.ids.forEach(id=>activeIds.add(id));
+          }
+        }
+      }
+    }
+    return { rules:allRules, activeIds };
+  }
+
+  class Game {
+    constructor(level) { this.load(level); }
+    load(level) {
+      if (!level || !Number.isInteger(level.width) || !Number.isInteger(level.height)) throw new Error('Invalid level dimensions');
+      this.level=clone(level); this.width=level.width;this.height=level.height;
+      this.objs=(level.objects||[]).map((o,i)=>({id:i+1,x:o.x,y:o.y,type:o.type||'text',...(o.word?{word:o.word.toUpperCase()}:{}),dir:o.dir??1}));
+      this.nextId=this.objs.length+1; this.history=[];this.future=[];this.turn=0;this.won=false;
+      this.refresh();
+    }
+    snapshot(){return clone({objs:this.objs,nextId:this.nextId,turn:this.turn,won:this.won});}
+    restore(s){ this.objs=clone(s.objs);this.nextId=s.nextId;this.turn=s.turn;this.won=s.won;this.refresh(); }
+    undo(){if(!this.history.length)return false;this.future.push(this.snapshot());this.restore(this.history.pop());return true;}
+    redo(){if(!this.future.length)return false;this.history.push(this.snapshot());this.restore(this.future.pop());return true;}
+    restart(){this.load(this.level);}
+    inside(x,y){return x>=0&&y>=0&&x<this.width&&y<this.height;}
+    at(x,y){return this.objs.filter(o=>o.x===x&&o.y===y);}
+    get(id){return this.objs.find(o=>o.id===id);}
+    isMatch(obj,subject,subjectNot=false) {
+      let valid = subject==='ALL' ? obj.type!=='text' : subject==='TEXT' ? obj.type==='text' : obj.type.toUpperCase()===subject;
+      return subjectNot ? !valid : valid;
+    }
+    condition(obj,rule) {
+      if (rule.lonely && this.at(obj.x,obj.y).some(other=>other.id!==obj.id)) return false;
+      if (!rule.cond) return true;
+      const c=rule.cond;
+      const check = other => other.id!==obj.id && this.isMatch(other,c.target);
+      let success=false;
+      if(c.type==='ON') success=this.at(obj.x,obj.y).some(check);
+      if(c.type==='NEAR') success=this.objs.some(other=>check(other)&&Math.abs(other.x-obj.x)<=1&&Math.abs(other.y-obj.y)<=1);
+      if(c.type==='FACING') {const [dx,dy]=DIRS[obj.dir];success=this.at(obj.x+dx,obj.y+dy).some(check);}
+      if(c.type==='WITHOUT') success=!this.objs.some(other=>check(other));
+      return c.not ? !success : success;
+    }
+    refresh() {
+      // WORD is bootstrapped from literal text on *each* refresh. A WORD object
+      // cannot sustain its own WORD status once the originating text is broken.
+      let result=parseRules(this.objs,this.width,this.height);
+      let wordIds=new Set();
+      const seen=new Set();
+      for(let round=0;round<12;round++) {
+        this.rules=result.rules;
+        const next=new Set(this.objs.filter(o=>o.type!=='text' && this.has(o,'WORD')).map(o=>o.id));
+        const signature=[...next].sort((a,b)=>a-b).join(',');
+        if(signature===[...wordIds].sort((a,b)=>a-b).join(','))break;
+        if(seen.has(signature)) break; // cyclic WORD patterns: terminate safely
+        seen.add(signature);wordIds=next;
+        result=parseRules(this.objs,this.width,this.height,wordIds);
+      }
+      this.rules=result.rules;this.activeIds=result.activeIds;this.wordIds=wordIds;
+    }
+    applicable(obj,verb) {return this.rules.filter(r=>r.verb===verb && this.isMatch(obj,r.subject,r.subjectNot) && this.condition(obj,r));}
+    props(obj) {
+      let set=new Set(obj.type==='text'?['PUSH']:[]), removes=new Set();
+      for(const r of this.applicable(obj,'IS')) if(PROPS.has(r.target)) (r.targetNot?removes:set).add(r.target);
+      for(const prop of removes) set.delete(prop);
+      return set;
+    }
+    has(obj,prop) {return this.props(obj).has(prop);}
+    sameFloat(a,b){return this.has(a,'FLOAT')===this.has(b,'FLOAT');}
+    add(type,x,y,dir=1,word) {
+      if (!this.inside(x,y)) return null;
+      const o={id:this.nextId++,type,x,y,dir}; if (word) o.word=word;
+      this.objs.push(o);return o;
+    }
+    destroy(ids) {
+      if (!ids.size) return;
+      const removed=this.objs.filter(o=>ids.has(o.id));
+      // HAS spawns an object at the location where the source was destroyed.
+      const spawns=[];
+      for(const o of removed) for(const r of this.applicable(o,'HAS')) {
+        if(r.targetNot||!NOUNS.has(r.target)||r.target==='ALL') continue;
+        spawns.push({type:r.target==='TEXT'?'text':r.target.toLowerCase(),word:r.target==='TEXT'?o.type.toUpperCase():undefined,x:o.x,y:o.y,dir:o.dir});
+      }
+      this.objs=this.objs.filter(o=>!ids.has(o.id));
+      for(const s of spawns) this.add(s.type,s.x,s.y,s.dir,s.word);
+      this.refresh();
+    }
+    // Movement is transactional: a blocked chain never leaves half-pushed objects behind.
+    // One movement phase is transactional: failure restores positions, direction,
+    // and all collision effects. Already-moved YOU objects must not move twice.
+    attempt(id,dx,dy,chain=new Set(),allowPull=true,movedIds=new Set()) {
+      const obj=this.get(id);
+      if(!obj || this.has(obj,'STILL') || movedIds.has(id))return false;
+      const nx=obj.x+dx,ny=obj.y+dy;
+      if(chain.has(id))return false;
+      if(!this.inside(nx,ny)) {
+        if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')) {this.destroy(new Set([id]));movedIds.add(id);return true;}
+        return false;
+      }
+      const backup=this.snapshot(), movedBackup=new Set(movedIds);
+      const source={x:obj.x,y:obj.y};
+      const rollback=()=>{this.restore(backup);movedIds.clear();for(const mid of movedBackup)movedIds.add(mid);chain.delete(id);return false;};
+      chain.add(id);
+      const occupants=this.at(nx,ny).filter(o=>o.id!==id&&this.sameFloat(obj,o));
+      for(const target of occupants) {
+        if(!this.get(target.id))continue;
+        const unlock=(this.has(obj,'OPEN')&&this.has(target,'SHUT'))||(this.has(obj,'SHUT')&&this.has(target,'OPEN'));
+        if(unlock && this.has(target,'STOP')){
+          this.destroy(new Set([obj.id,target.id]));movedIds.add(id);chain.delete(id);return true;
+        }
+        // SWAP bypasses STOP/PUSH; objects moving into or out of SWAP switch places.
+        if(this.has(obj,'SWAP')||this.has(target,'SWAP')) {
+          target.x=source.x;target.y=source.y;movedIds.add(target.id);
+        } else if(this.has(target,'PUSH')) {
+          if(!this.attempt(target.id,dx,dy,chain,false,movedIds))return rollback();
+        } else if(this.has(target,'STOP')) {
+          // A non-pushable WEAK STOP may be entered; overlap reaction removes it.
+          if(this.has(target,'WEAK')&&this.sameFloat(obj,target))continue;
+          if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')){
+            this.destroy(new Set([id]));movedIds.add(id);chain.delete(id);return true;
+          }
+          return rollback();
+        }
+      }
+      const moved=this.get(id);
+      if(moved){moved.x=nx;moved.y=ny;moved.dir=DIRS.findIndex(d=>d[0]===dx&&d[1]===dy);movedIds.add(id);}
+      if(allowPull) {
+        const trailing=this.at(source.x-dx,source.y-dy).filter(o=>o.id!==id&&this.sameFloat(obj,o)&&this.has(o,'PULL'));
+        for(const pulled of trailing) this.attempt(pulled.id,dx,dy,new Set(),false,movedIds);
+      }
+      chain.delete(id);return true;
+    }
+    transforms() {
+      const originals=[...this.objs], converted=[], erased=new Set();
+      for(const obj of originals) {
+        const rules=this.applicable(obj,'IS').filter(r=>NOUNS.has(r.target));
+        const forbidden=new Set(rules.filter(r=>r.targetNot).map(r=>r.target));
+        const original=obj.type.toUpperCase();
+        // X IS NOT X destroys X; excludes any other transformations in that phase.
+        if(forbidden.has(original)) {erased.add(obj.id);continue;}
+        const positive=rules.filter(r=>!r.targetNot&&r.target!=='ALL'&&!forbidden.has(r.target));
+        if(positive.some(r=>r.target===original))continue;
+        const targets=[...new Set(positive.map(r=>r.target))].filter(t=>t!==original);
+        if(targets.length)converted.push({obj,targets});
+      }
+      if(erased.size)this.destroy(erased);
+      for(const {obj,targets} of converted) {
+        const source=this.get(obj.id);if(!source)continue;
+        const [first,...rest]=targets,originalType=obj.type;
+        if(!source.origin)source.origin={type:source.type,word:source.word};
+        source.type=first==='TEXT'?'text':first.toLowerCase();
+        if(first==='TEXT')source.word=originalType.toUpperCase();else delete source.word;
+        for(const t of rest)this.add(t==='TEXT'?'text':t.toLowerCase(),obj.x,obj.y,obj.dir,t==='TEXT'?originalType.toUpperCase():undefined);
+      }
+      if(converted.length||erased.size)this.refresh();
+    }
+    make() {
+      const spawned=[];
+      for(const obj of [...this.objs]) for(const r of this.applicable(obj,'MAKE')) {
+        if(r.targetNot || !NOUNS.has(r.target) || r.target==='ALL')continue;
+        const t=r.target==='TEXT'?'text':r.target.toLowerCase();
+        if(this.at(obj.x,obj.y).some(other=>other.type===t && (t!=='text'||other.word===obj.type.toUpperCase())))continue;
+        spawned.push({t,x:obj.x,y:obj.y,dir:obj.dir,word:t==='text'?obj.type.toUpperCase():undefined});
+      }
+      for(const s of spawned)this.add(s.t,s.x,s.y,s.dir,s.word);
+      if(spawned.length)this.refresh();
+    }
+    autonomous() {
+      const movers=this.objs.filter(o=>this.has(o,'MOVE')).map(o=>o.id);
+      for(const id of movers) {
+        const o=this.get(id);if(!o)continue;
+        const [dx,dy]=DIRS[o.dir];
+        if(!this.attempt(id,dx,dy)) {const existing=this.get(id);if(existing)existing.dir=(existing.dir+2)%4;}
+      }
+      this.refresh();
+      const shiftTiles=this.objs.filter(o=>this.has(o,'SHIFT'));
+      const shifts=[];
+      for(const tile of shiftTiles) for(const obj of this.at(tile.x,tile.y)) if(obj.id!==tile.id&&this.sameFloat(tile,obj)) shifts.push({id:obj.id,dir:tile.dir});
+      for(const s of shifts) {const o=this.get(s.id);if(o){const [dx,dy]=DIRS[s.dir];this.attempt(s.id,dx,dy);}}
+      this.refresh();
+      const portals=this.objs.filter(o=>this.has(o,'TELE'));
+      if(portals.length>1){
+        const moves=[];
+        for(const obj of this.objs) {
+          if(portals.some(t=>t.id===obj.id))continue;
+          const start=portals.findIndex(t=>t.x===obj.x&&t.y===obj.y&&this.sameFloat(t,obj));
+          if(start>=0){const dest=portals[(start+1)%portals.length];moves.push({id:obj.id,x:dest.x,y:dest.y});}
+        }
+        for(const m of moves){const o=this.get(m.id);if(o){o.x=m.x;o.y=m.y;}}
+      }
+      this.refresh();
+    }
+    effects() {
+      // Resolve destructive reactions before winning, like the original's broad ordering.
+      let kills=new Set();
+      const tiles=new Map();
+      for(const o of this.objs) {
+        const k=key(o.x,o.y);if(!tiles.has(k))tiles.set(k,[]);tiles.get(k).push(o);
+      }
+      for(const objs of tiles.values()) {
+        for(let i=0;i<objs.length;i++)for(let j=i+1;j<objs.length;j++) {
+          const a=objs[i],b=objs[j];if(!this.sameFloat(a,b))continue;
+          const ap=this.props(a),bp=this.props(b);
+          if((ap.has('SINK')||bp.has('SINK')) && a.id!==b.id){if(!ap.has('SAFE'))kills.add(a.id);if(!bp.has('SAFE'))kills.add(b.id);}
+          if(ap.has('HOT')&&bp.has('MELT')&&!bp.has('SAFE'))kills.add(b.id);
+          if(bp.has('HOT')&&ap.has('MELT')&&!ap.has('SAFE'))kills.add(a.id);
+          if(ap.has('DEFEAT')&&(bp.has('YOU')||bp.has('YOU2'))&&!bp.has('SAFE'))kills.add(b.id);
+          if(bp.has('DEFEAT')&&(ap.has('YOU')||ap.has('YOU2'))&&!ap.has('SAFE'))kills.add(a.id);
+          if(ap.has('OPEN')&&bp.has('SHUT')){if(!ap.has('SAFE'))kills.add(a.id);if(!bp.has('SAFE'))kills.add(b.id);}
+          if(bp.has('OPEN')&&ap.has('SHUT')){if(!ap.has('SAFE'))kills.add(a.id);if(!bp.has('SAFE'))kills.add(b.id);}
+          if(ap.has('WEAK')&&!ap.has('SAFE'))kills.add(a.id);
+          if(bp.has('WEAK')&&!bp.has('SAFE'))kills.add(b.id);
+        }
+      }
+      this.destroy(kills);
+      for(const o of this.objs)if((this.has(o,'YOU')||this.has(o,'YOU2'))&&this.has(o,'WIN')){this.won=true;return;}
+      for(const a of this.objs)if(this.has(a,'YOU')||this.has(a,'YOU2')){
+        for(const b of this.at(a.x,a.y))if(a.id!==b.id&&this.sameFloat(a,b)&&this.has(b,'WIN')){this.won=true;return;}
+      }
+    }
+    step(dir) {
+      if(this.won)return false;
+      if(dir!==null && (!Number.isInteger(dir)||dir<0||dir>3))return false;
+      this.history.push(this.snapshot());if(this.history.length>300)this.history.shift();this.future=[];
+      // Explicit facing rules apply before movement, but not as forced movement.
+      for(const obj of this.objs){
+        for(const [name,value] of [['UP',0],['RIGHT',1],['DOWN',2],['LEFT',3]])
+          if(this.has(obj,name)){obj.dir=value;break;}
+      }
+      if(dir!==null) {
+        const [dx,dy]=DIRS[dir],movedIds=new Set();
+        const controllers=this.objs.filter(o=>this.has(o,'YOU')||this.has(o,'YOU2')).map(o=>o.id);
+        controllers.sort((a,b)=>{const A=this.get(a),B=this.get(b);return dx ? dx*(B.x-A.x) : dy*(B.y-A.y);});
+        for(const id of controllers) {const o=this.get(id);if(o&&!movedIds.has(id)) {o.dir=dir;this.attempt(id,dx,dy,new Set(),true,movedIds);}}
+      }
+      this.refresh();this.transforms();this.make();this.autonomous();this.effects();this.refresh();this.turn++;
+      return true;
+    }
+  }
+
+  const api={Game,parseRules,scanTokens,NOUNS,PROPS,VERBS,WORDS,DIRS};
+  if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  root.BabaCore=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script>
+(function(root){
+'use strict';
+// Original maps authored specifically for this implementation; not copied from any commercial game.
+const levels=[];
+function create(title,subtitle,goal,build){
+ const a=[];const o=(type,x,y,dir=1)=>a.push({type,x,y,dir});
+ // Separate word helper so every text tile carries its token.
+ const words=(words,x,y,dx=1,dy=0)=>words.split(' ').forEach((word,i)=>a.push({type:'text',word,x:x+dx*i,y:y+dy*i}));
+ const row=(type,x1,x2,y)=>{for(let x=x1;x<=x2;x++)o(type,x,y);};
+ const col=(type,x,y1,y2)=>{for(let y=y1;y<=y2;y++)o(type,x,y);};
+ const rect=(type,x1,y1,x2,y2)=>{row(type,x1,x2,y1);row(type,x1,x2,y2);col(type,x1,y1+1,y2-1);col(type,x2,y1+1,y2-1);};
+ const dots=(type,positions)=>positions.forEach(([x,y])=>o(type,x,y));
+ build({o,words,row,col,rect,dots});
+ levels.push({title,subtitle,goal,width:16,height:12,objects:a});
+}
+create('01 · 一句话，整个世界','规则诞生','理解 YOU 与 WIN：移动白色生物，接触旗帜。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',10,1);o('baba',2,8);o('flag',13,8);
+ dots('rock',[[7,5],[8,5],[7,6],[8,6],[10,8]]);
+});
+create('02 · 墙只是一个词','破坏规则','墙不会天生阻挡你。将 STOP 从句子里推走。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('WALL IS STOP',1,3);words('FLAG IS WIN',11,1);
+ col('wall',8,0,11);o('baba',2,8);o('flag',13,8);
+});
+create('03 · 单词比石头重要','移动文字','推动 WIN，补完 FLAG IS WIN；石头可以推开。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS PUSH',8,1);words('FLAG IS',9,4);
+ o('text',11,7); // temporary loose text replaced below
+ o('baba',2,8);o('flag',13,8);dots('rock',[[7,6],[8,6],[9,6]]);
+ // last loose tile token supplied by the postprocessor below
+});
+// Fix intentionally separated movable predicate.
+levels[2].objects.find(o=>o.type==='text'&&!o.word).word='WIN';
+create('04 · 世界可以变形','名词转换','推动 FLAG 补完 ROCK IS FLAG；让石头成为旗帜。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('ROCK IS',5,4);words('FLAG',8,6);
+ o('baba',2,9);dots('rock',[[11,7],[12,7],[11,8],[12,8]]);
+});
+create('05 · 你是谁？','切换控制对象','补完 KEKE IS YOU：成为另一个角色。',({o,words,rect})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',5,1);
+ words('KEKE IS',7,5);words('YOU',10,7);o('baba',2,8);o('keke',12,7);o('flag',13,9);
+ rect('wall',11,6,14,10);
+});
+create('06 · 水不会主动伤害','危险由文字决定','打断 WATER IS SINK，才能安全地穿过水域。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('WATER IS SINK',1,3);words('FLAG IS WIN',11,1);
+ col('water',8,0,11);o('baba',2,8);o('flag',13,8);
+});
+create('07 · 冰与熔岩','属性相互作用','LAVA IS HOT 与 BABA IS MELT 同时成立时，穿越熔岩会被消灭。打断其中一条规则。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('BABA IS MELT',1,3);words('LAVA IS HOT',1,5);
+ o('baba',2,9);o('flag',13,9);col('lava',8,0,11);
+});
+create('08 · 钥匙和门','OPEN + SHUT','让钥匙与门相遇，观察这两个属性怎样相互抵消。',({o,words,col,row})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);
+ words('KEY IS OPEN',1,3);words('DOOR IS SHUT',9,3);words('WALL IS STOP',5,1);
+ words('KEY IS PUSH',1,5);words('DOOR IS STOP',10,5);
+ row('wall',0,15,7);row('wall',0,15,9);o('baba',2,8);o('key',6,8);o('door',10,8);o('flag',13,8);
+});
+create('09 · 一接触就消失','DEFEAT','骷髅拥有 DEFEAT；试着拆掉 SKULL IS DEFEAT。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('SKULL IS DEFEAT',1,3);
+ col('skull',8,0,11);o('baba',2,9);o('flag',13,9);
+});
+create('10 · 旗子不是终点','改变胜利条件','想办法拼出 ROCK IS WIN，然后触碰岩石。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',5,1);
+ words('ROCK IS',5,4);words('WIN',8,6);o('baba',2,9);o('rock',4,9);o('flag',13,8);
+ dots('wall',[[11,7],[12,7],[13,7],[14,7],[11,8],[14,8],[11,9],[12,9],[13,9],[14,9]]);
+});
+create('11 · 我即终点','自身即胜利','尝试构成 BABA IS YOU AND WIN。',({o,words})=>{
+ words('BABA IS YOU',4,3);words('WIN',9,7);words('AND',6,7);
+ o('baba',2,9);o('rock',11,8);
+});
+create('12 · 自己行走','MOVE','KEKE IS MOVE：它会按朝向自动行动，碰壁会转身。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('KEKE IS MOVE',5,3);words('ROCK IS PUSH',1,4);
+ o('baba',2,9);o('flag',13,9);o('keke',7,8,1);dots('rock',[[9,8],[10,8],[11,8]]);
+});
+create('13 · 两条命令','PUSH 与 STOP','同一个物体可以同时拥有两种属性，文字规则会竞争。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,3);words('WALL IS PUSH',1,5);
+ o('baba',2,9);o('flag',13,9);for(let y=0;y<12;y++)o('wall',8,y);
+});
+create('14 · 在不同的层','FLOAT','幽灵能穿过普通墙壁，但同样必须让旗帜拥有 FLOAT 才能触发胜利。',({o,words,col})=>{
+ words('GHOST IS YOU',1,1);words('GHOST IS FLOAT',6,1);words('FLAG IS WIN',11,3);words('FLAG IS FLOAT',1,5);words('WALL IS STOP',1,3);
+ o('ghost',2,8);o('flag',13,8);col('wall',8,0,11);
+});
+create('15 · 地面也会移动','SHIFT','踩上 BELT IS SHIFT 的传送带，探索主动位移。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('BELT IS SHIFT',5,3);
+ o('baba',2,8);o('flag',13,8);dots('belt',[[6,8],[7,8],[8,8],[9,8],[10,8]]);
+});
+create('16 · 星间跃迁','TELE','STAR IS TELE：重叠在星星上的角色会跳往另一颗星星。',({o,words,dots})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('STAR IS TELE',5,3);words('WALL IS STOP',1,3);
+ o('baba',2,8);o('flag',13,8);dots('star',[[5,8],[11,8]]);
+ for(let y=0;y<12;y++)o('wall',8,y);
+});
+create('17 · 复数的你','AND','BABA 和 KEKE 都由你控制；只靠墙左边的角色无法接触旗帜。',({o,words,col})=>{
+ words('BABA AND KEKE IS YOU',2,2);words('FLAG IS WIN',11,4);words('WALL IS STOP',1,5);
+ o('baba',2,8);o('keke',11,8);o('flag',13,8);col('wall',8,0,11);
+});
+create('18 · 有条件的世界','ON','BABA ON ROCK IS WIN：只有叠在岩石上才会胜利。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('BABA ON ROCK IS WIN',3,3);
+ o('baba',2,9);o('rock',11,9);o('flag',13,7);
+});
+create('19 · 消失之后','HAS','让 BABA 触碰骷髅，生成拥有 YOU 与 SAFE 的 KEY，再用钥匙抵达旗帜。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('BABA HAS KEY',1,3);words('KEY IS YOU',1,5);words('KEY IS SAFE',1,7);words('SKULL IS DEFEAT',9,3);words('FLAG IS WIN',11,1);
+ o('baba',2,9);o('flag',13,9);col('skull',8,0,11);
+});
+create('20 · 世界创造者','MAKE','BABA MAKE ROCK 创造新角色。ROCK IS YOU：即使 BABA 会熔化，你仍可控制岩石穿过熔岩。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('BABA MAKE ROCK',1,3);words('ROCK IS YOU',1,5);
+ words('BABA IS MELT',1,7);words('LAVA IS HOT',10,3);
+ o('baba',2,9);o('flag',13,9);col('lava',8,0,11);
+});
+
+// v0.2: Five small conformance puzzles emphasizing actual rule semantics.
+create('21 · 石头也会说话','WORD · 物体当作文字','ROCK IS WORD 让石头本身成为 ROCK 这个词。观察它如何组成 ROCK IS WIN。',({o,words})=>{
+ words('ROCK IS WORD',1,1);words('BABA IS YOU',1,3);
+ words('IS WIN',9,8);o('rock',8,8);o('baba',2,8);
+});
+create('22 · 否定高于肯定','IS NOT STOP','上方写着 WALL IS STOP。把独立的 STOP 推进 WALL IS NOT 后面，取消墙的阻挡。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('WALL IS NOT',1,4);words('STOP',4,6);
+ col('wall',8,0,11);o('baba',4,7);o('flag',13,8);
+});
+create('23 · 自相矛盾的墙','IS NOT 同名词','完成 WALL IS NOT WALL。墙不会变成别的东西，而会从世界中消失。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('WALL IS NOT',1,3);words('WALL',4,5);
+ col('wall',8,0,11);o('baba',4,6);o('flag',13,8);
+});
+create('24 · 对调空间','SWAP · 换位','先组成 BABA IS SWAP 穿墙。靠近旗帜时，BABA NEAR FLAG IS NOT SWAP 将自动解除换位效果。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,3);
+ words('BABA IS',2,4);words('SWAP',4,6);words('BABA NEAR FLAG IS NOT SWAP',9,5);
+ col('wall',8,0,11);o('baba',4,7);o('flag',13,8);
+});
+create('25 · 脆弱的障碍','WEAK · 接触破坏','即使墙有 STOP，只要同时拥有 WEAK，触碰它就会令它消失。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,3);words('WALL IS WEAK',1,5);
+ col('wall',8,0,11);o('baba',2,8);o('flag',13,8);
+});
+
+const exported={levels};
+if(typeof module!=='undefined'&&module.exports)module.exports=exported;
+root.BabaLevels=exported;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script>
+(function(){'use strict';
+const {Game}=globalThis.BabaCore,{levels}=globalThis.BabaLevels;
+const canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const STORAGE='word-change-worlds-progress-v1';
+let current=0,game=null,completed=new Set(),animation=null;
+try{completed=new Set(JSON.parse(localStorage.getItem(STORAGE)||'[]'));}catch(e){}
+function save(){try{localStorage.setItem(STORAGE,JSON.stringify([...completed]));}catch(e){}}
+function load(i){current=(i+levels.length)%levels.length;game=new Game(levels[current]);animation=null;
+$('overlay').classList.remove('open');$('stage-title').textContent=levels[current].title;
+$('stage-subtitle').textContent=levels[current].subtitle;
+$('stage-count').textContent=String(current+1).padStart(2,'0')+' / '+levels.length;
+$('hint').textContent=levels[current].goal;update();canvas.focus({preventScroll:true});}
+function levelMenu(){let out='';for(let i=0;i<levels.length;i++){
+ const words=levels[i].title.split('·');out+=`<button class="level-btn ${i===current?'active':''}" data-level="${i}"><span class="lv-num">${String(i+1).padStart(2,'0')}</span><span class="lv-content"><span class="lv-title">${words.slice(1).join('·').trim()}</span><span class="lv-sub">${levels[i].subtitle}</span></span><span class="lv-check">${completed.has(i)?'✓':''}</span></button>`;
+ }$('level-list').innerHTML=out;$('level-list').querySelectorAll('button').forEach(btn=>btn.onclick=()=>load(Number(btn.dataset.level)));}
+function update(){levelMenu();const all=game.rules.map(r=>`${r.lonely?'LONELY ':''}${r.subjectNot?'NOT ':''}${r.subject}${r.cond?' '+r.cond.type+' '+(r.cond.not?'NOT ':'')+r.cond.target:''} ${r.verb} ${r.targetNot?'NOT ':''}${r.target}`);
+ const unique=[...new Set(all)];$('rules').innerHTML=unique.length?unique.map(s=>{
+ const m=s.match(/^(.*?) (IS|HAS|MAKE) (.*?)$/);
+ return `<div class="rule-row"><span class="subject">${m?m[1]:s}</span> <span class="verb">${m?m[2]:''}</span> <span class="result">${m?m[3]:''}</span></div>`;
+ }).join(''):'<div class="empty-rules">没有任何可识别的句子。你可能失去了控制对象，也可能发现了真正的自由。</div>';
+ $('status').innerHTML=game.won?'<b>✦ 关卡完成</b>':game.objs.some(o=>game.has(o,'YOU')||game.has(o,'YOU2'))?'<b>●</b> 世界规则实时生效':'<b>!</b> 当前没有 YOU：可以撤销或修改规则';
+ $('turn-count').textContent=`STEP ${String(game.turn).padStart(3,'0')}`;
+ $('undo').disabled=!game.history.length;$('redo').disabled=!game.future.length;
+ draw();}
+function advance(dir){if(game.won)return;const old=game.objs.map(o=>({...o}));game.step(dir);animation={old:new Map(old.map(o=>[o.id,o])),time:performance.now()};update();if(game.won){completed.add(current);save();$('win-detail').textContent=`${levels[current].title} · 用了 ${game.turn} 步。你让一条句子成为了现实。`;setTimeout(()=>{$('overlay').classList.add('open');},250);}}
+function undo(){if(game.undo()){animation=null;update();$('overlay').classList.remove('open');}}
+function redo(){if(game.redo()){animation=null;update();}}
+function restart(){game.restart();animation=null;update();$('overlay').classList.remove('open');}
+$('undo').onclick=undo;$('redo').onclick=redo;$('restart').onclick=restart;
+$('wait').onclick=()=>advance(null);$('next').onclick=()=>load(current+1);
+$('win-restart').onclick=restart;$('win-next').onclick=()=>load(current+1);
+document.querySelectorAll('[data-dir]').forEach(el=>el.onclick=()=>advance(Number(el.dataset.dir)));
+document.addEventListener('keydown',e=>{
+ if(e.altKey||e.ctrlKey||e.metaKey)return;
+ const k=e.key.toLowerCase(), dirs={arrowup:0,w:0,arrowright:1,d:1,arrowdown:2,s:2,arrowleft:3,a:3};
+ if(Object.hasOwn(dirs,k)){e.preventDefault();advance(dirs[k]);return;}
+ if(k==='z'||k==='backspace'){e.preventDefault();undo();}else if(k==='y'){e.preventDefault();redo();}else if(k==='r'){e.preventDefault();restart();}else if(k===' '){e.preventDefault();advance(null);}else if(k==='escape'){$('overlay').classList.remove('open');}
+});
+// Responsive hi-DPI hand drawn board, no external art or fonts.
+const COLORS={baba:'#f2f6ff',keke:'#f4ad6b',flag:'#ffdc74',wall:'#8593b6',rock:'#9e9ab7',water:'#70c4ed',lava:'#ff8c63',skull:'#e7c5da',key:'#f5d17e',door:'#a87566',grass:'#92dda1',tree:'#6abb98',belt:'#9ed6d4',star:'#f5cf73',ghost:'#cdbafb',love:'#fb95a4',box:'#a88067',ice:'#a0e9f9',hedge:'#7ccbaa',bug:'#fda5a0',flower:'#f4a7d7'};
+function rounded(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
+function circle(x,y,r,fill){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
+function poly(points,fill){ctx.beginPath();ctx.moveTo(...points[0]);for(let i=1;i<points.length;i++)ctx.lineTo(...points[i]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
+function icon(type,x,y,s,dir){
+ ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+ const c=COLORS[type]||'#d7e2f0';
+ ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(0,0.31,.33,.10,0,0,Math.PI*2);ctx.fill();
+ if(type==='baba'){
+   rounded(-.27,-.12,.54,.4,.17);ctx.fillStyle='#edf5ff';ctx.fill();
+   rounded(-.25,-.42,.14,.36,.07);ctx.fill();rounded(.11,-.42,.14,.36,.07);ctx.fill();
+   rounded(-.19,-.31,.045,.16,.03);ctx.fillStyle='#f7a8b7';ctx.fill();rounded(.15,-.31,.045,.16,.03);ctx.fill();
+   circle(-.1,.03,.027,'#2b3152');circle(.1,.03,.027,'#2b3152');circle(0,.10,.035,'#ef9cae');
+ }else if(type==='keke'){
+   ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(-.29,.21);ctx.lineTo(-.3,-.24);ctx.lineTo(-.11,-.11);ctx.quadraticCurveTo(0,-.29,.13,-.12);ctx.lineTo(.3,-.26);ctx.lineTo(.28,.21);ctx.quadraticCurveTo(0,.42,-.29,.21);ctx.fill();
+   circle(-.1,.03,.036,'#412d39');circle(.1,.03,.036,'#412d39');
+ }else if(type==='flag'){
+   rounded(-.13,-.39,.055,.77,.02);ctx.fillStyle='#eee7c9';ctx.fill();poly([[-.075,-.35],[.32,-.27],[.2,-.07],[-.075,-.12]],'#ffba78');circle(-.1,.36,.08,'#b5a38b');
+ }else if(type==='wall'){
+   rounded(-.38,-.33,.76,.64,.07);ctx.fillStyle='#8291ad';ctx.fill();ctx.strokeStyle='#4c607e';ctx.lineWidth=.035;
+   for(const y of [-.1,.13]){ctx.beginPath();ctx.moveTo(-.37,y);ctx.lineTo(.37,y);ctx.stroke();}
+   for(const [px,a,b] of [[0,-.32,-.1],[-.2,-.1,.13],[.2,-.1,.13],[0,.13,.31]]){ctx.beginPath();ctx.moveTo(px,a);ctx.lineTo(px,b);ctx.stroke();}
+ }else if(type==='rock'){
+   poly([[-.37,.14],[-.28,-.20],[-.05,-.37],[.24,-.25],[.37,.08],[.2,.33],[-.22,.32]],c);poly([[-.28,-.2],[-.05,-.37],[.11,-.08],[-.1,.06]],'#c7bfcf');poly([[.11,-.08],[.24,-.25],[.37,.08],[.2,.33]],'#747b99');
+ }else if(type==='water'){
+   for(let i=0;i<3;i++){ctx.strokeStyle=i===1?'#d5f3fd':c;ctx.lineWidth=.075;ctx.lineCap='round';ctx.beginPath();for(let xx=-.34;xx<=.35;xx+=.035){let yy=(-.16+i*.20)+Math.sin((xx+i*.10)*16)*.046;if(xx===-.34)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}ctx.stroke();}
+ }else if(type==='lava'){
+   poly([[-.28,.3],[-.27,-.15],[-.13,-.02],[-.04,-.39],[.10,-.13],[.21,-.23],[.33,.18],[.2,.33]],'#f77b60');poly([[-.1,.27],[0,-.12],[.12,.08],[.19,.3]],'#f6d28c');
+ }else if(type==='skull'){
+   rounded(-.27,-.31,.54,.51,.24);ctx.fillStyle=c;ctx.fill();rounded(-.17,.08,.34,.25,.06);ctx.fill();circle(-.11,-.06,.084,'#36405a');circle(.11,-.06,.084,'#36405a');poly([[0,0],[-.045,.11],[.045,.11]],'#36405a');
+ }else if(type==='key'){
+   ctx.lineWidth=.11;ctx.strokeStyle='#f5d17e';ctx.beginPath();ctx.arc(-.14,-.12,.17,0,Math.PI*2);ctx.moveTo(-.02,.01);ctx.lineTo(.28,.31);ctx.lineTo(.38,.19);ctx.moveTo(.18,.21);ctx.lineTo(.29,.10);ctx.stroke();
+ }else if(type==='door'){
+   rounded(-.28,-.39,.56,.79,.06);ctx.fillStyle='#ad795e';ctx.fill();ctx.strokeStyle='#614c50';ctx.lineWidth=.045;ctx.stroke();rounded(-.18,-.3,.36,.62,.04);ctx.stroke();circle(.12,.06,.038,'#f6cc76');
+ }else if(type==='grass'){
+   for(let i=-2;i<=2;i++)poly([[i*.12,.3],[i*.12-.09,-.11-i%2*.05],[i*.12+.05,.11],[i*.12+.12,-.26],[i*.12+.1,.3]],i%2?'#6abe90':'#8bd6a0');
+ }else if(type==='tree'){
+   rounded(-.09,-.08,.18,.44,.04);ctx.fillStyle='#9c765f';ctx.fill();circle(-.15,-.18,.23,'#59af85');circle(.13,-.22,.24,'#74c99c');circle(0,-.35,.21,'#8bdfb0');
+ }else if(type==='belt'){
+   rounded(-.37,-.18,.74,.37,.08);ctx.fillStyle='#527f8c';ctx.fill();for(let i=-1;i<=1;i++)poly([[i*.22-.09,-.11],[i*.22+.04,0],[i*.22-.09,.11],[i*.22-.015,0]],'#b2eaec');
+ }else if(type==='star'){
+   const p=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?.17:.38;p.push([Math.cos(a)*r,Math.sin(a)*r]);}poly(p,c);
+ }else if(type==='ghost'){
+   ctx.beginPath();ctx.arc(0,-.10,.28,Math.PI,0);ctx.lineTo(.28,.29);ctx.lineTo(.14,.20);ctx.lineTo(0,.31);ctx.lineTo(-.14,.20);ctx.lineTo(-.28,.29);ctx.closePath();ctx.fillStyle=c;ctx.fill();circle(-.09,-.06,.036,'#384467');circle(.09,-.06,.036,'#384467');
+ }else if(type==='love'){
+   ctx.rotate(-Math.PI/4);rounded(-.22,-.17,.44,.44,.04);ctx.fillStyle=c;ctx.fill();circle(0,-.17,.22,c);circle(.22,.05,.22,c);
+ }else if(type==='box'){
+   rounded(-.32,-.32,.64,.64,.06);ctx.fillStyle='#b48b63';ctx.fill();ctx.strokeStyle='#725b52';ctx.lineWidth=.05;ctx.stroke();ctx.beginPath();ctx.moveTo(-.28,-.28);ctx.lineTo(.28,.28);ctx.moveTo(.28,-.28);ctx.lineTo(-.28,.28);ctx.stroke();
+ }else if(type==='ice'){
+   poly([[0,-.39],[.31,-.16],[.28,.21],[0,.38],[-.31,.16],[-.28,-.2]],c);poly([[0,-.39],[.31,-.16],[0,-.02],[-.28,-.2]],'#dcfbff');
+ }else if(type==='hedge'){
+   circle(-.2,.10,.2,'#65b991');circle(0,-.12,.25,'#8ddbaf');circle(.2,.08,.22,'#6ec89d');
+ }else if(type==='bug'){
+   circle(0,0,.28,c);circle(-.15,-.08,.06,'#55536c');circle(.15,.09,.06,'#55536c');circle(.06,-.18,.05,'#55536c');
+ }else if(type==='flower'){
+   ctx.fillStyle='#86ce9c';rounded(-.03,0,.06,.36,.02);ctx.fill();for(let i=0;i<6;i++){const a=i*Math.PI/3;circle(Math.cos(a)*.16,-.13+Math.sin(a)*.16,.12,'#f7adcf');}circle(0,-.13,.11,'#f9d67d');
+ }
+ ctx.restore();
+}
+function wordTile(o,x,y,s,active){
+ const word=o.word||'?';const noun=BabaCore.NOUNS.has(word),verb=BabaCore.VERBS.has(word),property=BabaCore.PROPS.has(word);
+ const fg=noun?'#f6b0c4':verb?'#f5e6a1':property?'#b8f4de':'#b6d5fb';
+ const bg=noun?'#4a2f50':verb?'#57503c':property?'#2e5054':'#354363';
+ ctx.save();ctx.translate(x,y);if(active){ctx.shadowColor=fg;ctx.shadowBlur=s*.17;}
+ rounded(-s*.44,-s*.42,s*.88,s*.84,s*.115);ctx.fillStyle=bg;ctx.fill();ctx.strokeStyle=fg;ctx.globalAlpha=active?.9:.48;ctx.lineWidth=s*.028;ctx.stroke();ctx.globalAlpha=1;
+ ctx.fillStyle=active?fg:'#c2c7d7';ctx.font=`900 ${Math.min(s*.30,s*2.02/(word.length*.66+1))}px system-ui, sans-serif`;
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(word,0,0);
+ if(active){ctx.fillStyle=fg;ctx.globalAlpha=.7;rounded(-s*.15,s*.305,s*.3,s*.028,s*.02);ctx.fill();}
+ ctx.restore();
+}
+function draw(){if(!game)return;
+ const cw=canvas.width,ch=canvas.height, W=game.width,H=game.height;const s=Math.min(cw/W,ch/H), ox=(cw-W*s)/2,oy=(ch-H*s)/2;
+ ctx.fillStyle='#101a2b';ctx.fillRect(0,0,cw,ch);
+ // A textured, but quiet, non-Sokoban-looking board.
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+   ctx.fillStyle=(x+y)%2===0?'#172339':'#18263d';ctx.fillRect(ox+x*s+.5,oy+y*s+.5,s-1,s-1);
+   ctx.fillStyle='#2f4560';ctx.globalAlpha=.2;circle(ox+x*s+s*.5,oy+y*s+s*.5,s*.018,'#7da5b7');ctx.globalAlpha=1;
+ }
+ const sorted=[...game.objs].sort((a,b)=>a.type==='text'?1:b.type==='text'?-1:0);
+ const p=animation?Math.min(1,(performance.now()-animation.time)/135):1;
+ for(const o of sorted){
+   const prev=animation?.old.get(o.id),x=prev?prev.x+(o.x-prev.x)*p:o.x,y=prev?prev.y+(o.y-prev.y)*p:o.y;
+   const px=ox+(x+.5)*s,py=oy+(y+.5)*s;
+   if(o.type==='text')wordTile(o,px,py,s,game.activeIds.has(o.id));
+   else {if(game.has(o,'WIN')){ctx.strokeStyle='#e7df90';ctx.lineWidth=2;ctx.globalAlpha=.6;ctx.beginPath();ctx.arc(px,py,s*.42,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+     if(game.has(o,'YOU')||game.has(o,'YOU2')){ctx.strokeStyle='#b3f0dc';ctx.lineWidth=s*.035;rounded(px-s*.40,py-s*.39,s*.80,s*.78,s*.21);ctx.stroke();}
+     icon(o.type,px,py,s,o.dir);
+     if(game.wordIds && game.wordIds.has(o.id)){
+       ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+       ctx.fillStyle='#203857';ctx.strokeStyle=game.activeIds.has(o.id)?'#b7f6ed':'#8aa8c7';ctx.lineWidth=s*.027;
+       rounded(px-s*.29,py-s*.48,s*.58,s*.20,s*.06);ctx.fill();ctx.stroke();
+       ctx.font=`900 ${s*.125}px system-ui,sans-serif`;ctx.fillStyle='#e4f8ff';ctx.fillText('WORD',px,py-s*.375);ctx.restore();
+     }}
+ }
+ if(animation&&p<1)requestAnimationFrame(draw);else animation=null;
+}
+// Swipe controls on touchscreen.
+let touchStart=null;canvas.addEventListener('touchstart',e=>{if(e.touches.length===1)touchStart=[e.touches[0].clientX,e.touches[0].clientY];},{passive:true});
+canvas.addEventListener('touchend',e=>{if(!touchStart||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-touchStart[0],dy=e.changedTouches[0].clientY-touchStart[1];touchStart=null;if(Math.hypot(dx,dy)<24)return;advance(Math.abs(dx)>Math.abs(dy)?(dx>0?1:3):(dy>0?2:0));},{passive:true});
+load(0);
+})();
+
+</script>
+</body></html>
