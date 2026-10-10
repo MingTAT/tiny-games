@@ -19,7 +19,7 @@ function update(){levelMenu();const all=game.rules.map(r=>`${r.lonely?'LONELY ':
  const m=s.match(/^(.*?) (IS|HAS|MAKE) (.*?)$/);
  return `<div class="rule-row"><span class="subject">${m?m[1]:s}</span> <span class="verb">${m?m[2]:''}</span> <span class="result">${m?m[3]:''}</span></div>`;
  }).join(''):'<div class="empty-rules">没有任何可识别的句子。你可能失去了控制对象，也可能发现了真正的自由。</div>';
- $('status').innerHTML=game.won?'<b>✦ 关卡完成</b>':game.objs.some(o=>game.has(o,'YOU')||game.has(o,'YOU2'))?'<b>●</b> 世界规则实时生效':'<b>!</b> 当前没有 YOU：可以撤销或修改规则';
+ $('status').innerHTML=game.won?'<b>✦ 关卡完成</b>':(game.objs.some(o=>game.has(o,'YOU')||game.has(o,'YOU2'))||game.rules.some(r=>r.subject==='EMPTY'&&r.target==='YOU'&&!r.targetNot))?'<b>●</b> 世界规则实时生效':'<b>!</b> 当前没有 YOU：可以撤销或修改规则';
  $('turn-count').textContent=`STEP ${String(game.turn).padStart(3,'0')}`;
  $('undo').disabled=!game.history.length;$('redo').disabled=!game.future.length;
  draw();}
@@ -100,7 +100,7 @@ function icon(type,x,y,s,dir){
 function wordTile(o,x,y,s,active){
  const word=o.word||'?';const noun=BabaCore.NOUNS.has(word),verb=BabaCore.VERBS.has(word),property=BabaCore.PROPS.has(word);
  const fg=noun?'#f6b0c4':verb?'#f5e6a1':property?'#b8f4de':'#b6d5fb';
- const bg=noun?'#4a2f50':verb?'#57503c':property?'#2e5054':'#354363';
+ const bg=o.type==='letter'?'#3b375c':noun?'#4a2f50':verb?'#57503c':property?'#2e5054':'#354363';
  ctx.save();ctx.translate(x,y);if(active){ctx.shadowColor=fg;ctx.shadowBlur=s*.17;}
  rounded(-s*.44,-s*.42,s*.88,s*.84,s*.115);ctx.fillStyle=bg;ctx.fill();ctx.strokeStyle=fg;ctx.globalAlpha=active?.9:.48;ctx.lineWidth=s*.028;ctx.stroke();ctx.globalAlpha=1;
  ctx.fillStyle=active?fg:'#c2c7d7';ctx.font=`900 ${Math.min(s*.30,s*2.02/(word.length*.66+1))}px system-ui, sans-serif`;
@@ -116,13 +116,14 @@ function draw(){if(!game)return;
    ctx.fillStyle=(x+y)%2===0?'#172339':'#18263d';ctx.fillRect(ox+x*s+.5,oy+y*s+.5,s-1,s-1);
    ctx.fillStyle='#2f4560';ctx.globalAlpha=.2;circle(ox+x*s+s*.5,oy+y*s+s*.5,s*.018,'#7da5b7');ctx.globalAlpha=1;
  }
- const sorted=[...game.objs].sort((a,b)=>a.type==='text'?1:b.type==='text'?-1:0);
+ const sorted=[...game.objs].sort((a,b)=>['text','letter'].includes(a.type)?1:['text','letter'].includes(b.type)?-1:0);
  const p=animation?Math.min(1,(performance.now()-animation.time)/135):1;
  for(const o of sorted){
    const prev=animation?.old.get(o.id),x=prev?prev.x+(o.x-prev.x)*p:o.x,y=prev?prev.y+(o.y-prev.y)*p:o.y;
    const px=ox+(x+.5)*s,py=oy+(y+.5)*s;
-   if(o.type==='text')wordTile(o,px,py,s,game.activeIds.has(o.id));
+   if(o.type==='text'||o.type==='letter')wordTile(o,px,py,s,game.activeIds.has(o.id));
    else {if(game.has(o,'WIN')){ctx.strokeStyle='#e7df90';ctx.lineWidth=2;ctx.globalAlpha=.6;ctx.beginPath();ctx.arc(px,py,s*.42,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+     if(game.groupIds.has(o.id)){ctx.save();ctx.strokeStyle='#d9a9fd';ctx.lineWidth=s*.027;ctx.setLineDash([s*.085,s*.06]);rounded(px-s*.43,py-s*.42,s*.86,s*.84,s*.21);ctx.stroke();ctx.restore();}
      if(game.has(o,'YOU')||game.has(o,'YOU2')){ctx.strokeStyle='#b3f0dc';ctx.lineWidth=s*.035;rounded(px-s*.40,py-s*.39,s*.80,s*.78,s*.21);ctx.stroke();}
      icon(o.type,px,py,s,o.dir);
      if(game.wordIds && game.wordIds.has(o.id)){

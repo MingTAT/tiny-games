@@ -8,8 +8,8 @@ function thing(type,x,y,dir=1){return {type,x,y,dir};}
 function words(string,x,y,dx=1,dy=0){return string.split(' ').map((word,i)=>({type:'text',word,x:x+i*dx,y:y+i*dy}));}
 const obj=(game,type)=>game.objs.filter(o=>o.type===type);
 
-test('25 authored levels initialize and basic expected rules parse',()=>{
- assert.equal(levels.length,25);
+test('31 authored levels initialize and basic expected rules parse',()=>{
+ assert.equal(levels.length,31);
  for(const l of levels){const game=new Game(l);assert(game.rules.some(r=>r.verb==='IS'));game.step(null);}
 });
 test('IS YOU permits movement; undo and redo restore state',()=>{
@@ -225,6 +225,124 @@ test('25 WEAK STOP wall is consumed when player steps into it',()=>{
  const game=new Game(levels[24]);assert(game.at(8,8).some(o=>o.type==='wall'));
  for(let i=0;i<11;i++)game.step(1);
  assert(!game.at(8,8).some(o=>o.type==='wall'));assert(game.won);
+});
+
+
+test('GROUP is a membership marker, never a physical transformation',()=>{
+ const game=g([...words('ROCK IS GROUP',0,0),thing('rock',7,7)]);
+ game.step(null);assert.equal(obj(game,'rock').length,1);assert.equal(obj(game,'group').length,0);
+ assert(game.groupIds.has(obj(game,'rock')[0].id));
+});
+test('GROUP IS PUSH grants PUSH only to members',()=>{
+ const game=g([...words('ROCK IS GROUP',0,0),...words('GROUP IS PUSH',0,2),thing('rock',7,7),thing('keke',8,8)]);
+ assert(game.has(obj(game,'rock')[0],'PUSH'));assert(!game.has(obj(game,'keke')[0],'PUSH'));
+});
+test('GROUP applies WIN to two noun types and stops when membership breaks',()=>{
+ const game=g([...words('ROCK IS GROUP',0,0),...words('KEKE IS GROUP',0,2),...words('GROUP IS WIN',0,4),thing('rock',6,7),thing('keke',7,7)]);
+ assert(game.has(obj(game,'rock')[0],'WIN'));assert(game.has(obj(game,'keke')[0],'WIN'));
+ game.objs=game.objs.filter(o=>o.y!==2);game.refresh();
+ assert(!game.has(obj(game,'keke')[0],'WIN'));
+});
+test('GROUP IS ROCK transforms all group members, not physical GROUP',()=>{
+ const game=g([...words('KEKE IS GROUP',0,0),...words('GROUP IS ROCK',0,2),thing('keke',8,7)]);
+ game.step(null);assert.equal(obj(game,'keke').length,0);assert.equal(obj(game,'rock').length,1);
+});
+test('letter cells spell a property and all contributing glyphs become active',()=>{
+ const ls='WIN'.split('').map((word,i)=>({type:'letter',word,x:2+i,y:4}));
+ const game=g([...words('FLAG IS',0,4),...ls,thing('flag',7,7)]);
+ assert(game.rules.some(r=>r.subject==='FLAG'&&r.target==='WIN'));
+ for(const o of ls)assert(game.activeIds.has(game.objs.find(p=>p.type==='letter'&&p.x===o.x).id));
+});
+test('letter cells can spell a subject before whole IS PUSH tiles',()=>{
+ const ls='ROCK'.split('').map((word,i)=>({type:'letter',word,x:i,y:4}));
+ const game=g([...ls,...words('IS PUSH',4,4),thing('rock',8,7)]);
+ assert(game.has(obj(game,'rock')[0],'PUSH'));
+});
+test('incomplete or broken letter spellings do not form phantom rules',()=>{
+ const ls='WIN'.split('').map((word,i)=>({type:'letter',word,x:2+i,y:4}));
+ const game=g([...words('FLAG IS',0,4),...ls,thing('flag',7,7)]);
+ game.objs=game.objs.filter(o=>o.type!=='letter'||o.word!=='I');game.refresh();
+ assert(!game.has(obj(game,'flag')[0],'WIN'));
+});
+test('letter text has default PUSH and TEXT conditions apply to it',()=>{
+ const game=g([...words('TEXT IS NOT PUSH',0,0),{type:'letter',word:'A',x:6,y:7}]);
+ assert(!game.has(obj(game,'letter')[0],'PUSH'));
+});
+test('EMPTY IS ROCK fills only genuinely empty cells and keeps texts intact',()=>{
+ const game=g([...words('EMPTY IS ROCK',0,0),thing('baba',5,6)],7,7);
+ const before=game.objs.length;game.step(null);
+ assert.equal(obj(game,'rock').length,49-before);
+ assert.equal(game.objs.filter(o=>o.type==='text').length,3);
+ assert.equal(game.at(5,6)[0].type,'baba');
+});
+test('ROCK IS EMPTY destroys existing rocks without spawning a fake EMPTY unit',()=>{
+ const game=g([...words('ROCK IS EMPTY',0,0),thing('rock',6,7)]);
+ game.step(null);assert.equal(obj(game,'rock').length,0);assert.equal(obj(game,'empty').length,0);
+});
+test('EMPTY IS NOT ROCK vetoes transformation of empty squares',()=>{
+ const game=g([...words('EMPTY IS ROCK',0,0),...words('EMPTY IS NOT ROCK',0,2)],12,10);
+ game.step(null);assert.equal(obj(game,'rock').length,0);
+});
+test('EMPTY IS STOP blocks entry to vacant tile but not occupied ordinary tile',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS STOP',0,2),thing('baba',6,7),thing('rock',6,6)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);
+ game.step(0);assert.equal(obj(game,'baba')[0].y,6);
+});
+test('EMPTY IS WIN alone does not win when BABA walks into an empty cell',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS WIN',0,2),thing('baba',6,7)]);
+ game.step(1);assert(!game.won);
+});
+test('EMPTY IS YOU and EMPTY IS WIN triggers a win on a vacant cell',()=>{
+ const game=g([...words('EMPTY IS YOU',0,0),...words('EMPTY IS WIN',0,2)]);
+ game.step(null);assert(game.won);
+});
+test('undo removes EMPTY-created objects and restores previous rules',()=>{
+ const game=g([...words('EMPTY IS ROCK',0,0)]);
+ game.step(null);assert(obj(game,'rock').length>0);game.undo();assert.equal(obj(game,'rock').length,0);
+});
+test('26 GROUP PUSH opens the rock barrier after pushing the predicate',()=>{
+ const game=new Game(levels[25]);
+ assert(!game.has(game.at(8,8)[0],'PUSH'));
+ game.step(0);game.step(0);
+ assert(game.has(game.at(8,8)[0],'PUSH'));
+ for(let i=0;i<3;i++)game.step(2);
+ for(let i=0;i<9;i++)game.step(1);
+ assert(game.won);
+});
+test('27 GROUP WIN converts two group member kinds into goals',()=>{
+ const game=new Game(levels[26]);
+ assert(!game.has(obj(game,'rock')[0],'WIN'));
+ game.step(0);game.step(0);
+ assert(game.has(obj(game,'rock')[0],'WIN'));assert(game.has(obj(game,'keke')[0],'WIN'));
+ for(let i=0;i<4;i++)game.step(2);
+ for(let i=0;i<5;i++)game.step(1);
+ assert(game.won);
+});
+test('28 letter WIN completes FLAG IS WIN and wins',()=>{
+ const game=new Game(levels[27]);
+ assert(!game.has(obj(game,'flag')[0],'WIN'));
+ game.step(0);game.step(0);assert(game.has(obj(game,'flag')[0],'WIN'));
+ for(let i=0;i<4;i++)game.step(2);
+ for(let i=0;i<3;i++)game.step(1);
+ assert(game.won);
+});
+test('29 spelled ROCK turns rocks PUSH and allows crossing STOP rock wall',()=>{
+ const game=new Game(levels[28]);
+ assert(!game.has(obj(game,'rock')[0],'PUSH'));
+ game.step(0);game.step(0);assert(game.has(obj(game,'rock')[0],'PUSH'));
+ for(let i=0;i<4;i++)game.step(2);
+ for(let i=0;i<8;i++)game.step(1);
+ assert(game.won);
+});
+test('30 EMPTY IS ROCK fills world and provides WIN rocks',()=>{
+ const game=new Game(levels[29]);
+ game.step(0);game.step(0);
+ assert(obj(game,'rock').length>50);
+ game.step(2);assert(game.won);
+});
+test('31 EMPTY IS YOU AND WIN wins by shared empty properties',()=>{
+ const game=new Game(levels[30]);
+ game.step(0);assert(!game.won);game.step(0);assert(game.won);
 });
 
 console.log(`\n${passed} tests passed`);

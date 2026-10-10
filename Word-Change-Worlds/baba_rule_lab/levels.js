@@ -129,6 +129,38 @@ create('25 · 脆弱的障碍','WEAK · 接触破坏','即使墙有 STOP，只�
  col('wall',8,0,11);o('baba',2,8);o('flag',13,8);
 });
 
+// v0.3: membership, multi-cell word spelling, and virtual EMPTY puzzles.
+create('26 · 群体的力量','GROUP · 成员共享属性','先完成 GROUP IS PUSH。拥有 GROUP 身份的岩石才可以被推过走廊。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS GROUP',1,2);words('ROCK IS STOP',10,1);words('FLAG IS WIN',10,3);
+ words('GROUP IS',2,4);words('PUSH',4,6);o('baba',4,7);col('rock',8,0,11);o('flag',13,8);
+});
+create('27 · 群体不止一种','GROUP · 多成员','同时让岩石和 KEKE 成为 GROUP，再拼出 GROUP IS WIN。群体中的任何成员都能成为终点。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS GROUP',1,2);words('KEKE IS GROUP',1,3);
+ words('GROUP IS',4,4);words('WIN',6,6);o('baba',6,7);o('rock',11,9);o('keke',13,9);
+});
+create('28 · 字母的誓言','LETTERS · 拼出 WIN','把单独的 N 推上去。W、I、N 三个格子拼成 WIN，便可补成 FLAG IS WIN。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS',6,4);
+ o('letter',8,4);o('letter',9,4);o('letter',10,6);
+ o('baba',10,7);o('flag',13,9);
+});
+// Set individual letter glyphs. Letter objects remain physical PUSH text.
+{const a=levels[27].objects.filter(o=>o.type==='letter');[a[0].word,a[1].word,a[2].word]=['W','I','N'];}
+create('29 · 每个字母都重要','LETTERS · 拼出 ROCK','把 K 推进 R O C 的末尾，形成 ROCK IS PUSH。原本 STOP 的岩石才会让出通道。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS STOP',1,2);words('FLAG IS WIN',11,1);
+ for(const [i,w] of ['R','O','C'].entries())o('letter',2+i,4);
+ o('letter',5,6);words('IS PUSH',6,4);
+ o('baba',5,7);col('rock',8,0,11);o('flag',13,9);
+});
+levels[28].objects.filter(o=>o.type==='letter').forEach((o,i)=>o.word=['R','O','C','K'][i]);
+create('30 · 空白变成实体','EMPTY · 空格变形','把 ROCK 补上 EMPTY IS，空着的格子会变成岩石。再触碰一块拥有 WIN 的岩石。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS WIN',11,1);
+ words('EMPTY IS',2,4);words('ROCK',4,6);
+ o('baba',4,7);
+});
+create('31 · 空白本身获胜','EMPTY · YOU 与 WIN','让 EMPTY 同时拥有 YOU 和 WIN，空格自己便可以达成胜利，而不需要把 Baba 放进空格。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('EMPTY IS YOU AND',2,4);words('WIN',6,6);o('baba',6,7);
+});
+
 const exported={levels};
 if(typeof module!=='undefined'&&module.exports)module.exports=exported;
 root.BabaLevels=exported;

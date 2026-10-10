@@ -1,60 +1,49 @@
-# Words Change Worlds · v0.2
+# Words Change Worlds · v0.3
 
-独立开发的浏览器文字规则游戏。目标是在**不使用《Baba Is You》商业美术、音乐与关卡数据**的前提下，逐步验证其规则系统的行为一致性。用户之前的 **Rule Is World** 是另一个独立项目，未被修改或覆盖。
+独立开发的浏览器文字规则解谜游戏，基于「推词改写世界」这一机制进行原创实现。**不是原作《Baba Is You》的官方版本、原版关卡或完整 1:1 复刻。** 之前的 Rule Is World 是另一个仓库，**不要覆盖它**。
 
-## 直接开始
+## 运行 / 更新
 
-- **`play.html`**：双击即可玩。完整 HTML 包含源代码，无需联网、安装或构建。
-- `index.html`：模块化入口（与 `engine.js`、`levels.js`、`app.js` 放在同一目录即可）；适合 GitHub Pages。
-- `tests.js`：Node.js 规则测试。运行 `node tests.js`。
+- **双击 `play.html` 即可运行**：独立单文件，不需要联网、安装或构建。
+- 上传到 GitHub Pages：使用同目录的 `index.html`、`engine.js`、`levels.js`、`app.js`。
+- 从 v0.2 更新：将 **本项目仓库中的** `index.html`、`play.html`、`engine.js`、`levels.js`、`app.js`、`tests.js`、`README.md`、`CHANGELOG.md` 替换为同名新文件；不要使用 v0.2 旧版脚本混搭。
+- 本地测试：`node tests.js`（需要 Node.js 18 或以上）。
+- 操作：方向键 / WASD 移动，Z 撤销，Y 重做，R 重开，空格等待；支持触摸按键和画布滑动。
 
-## 操作
+## v0.3 的真正变化
 
-- 方向键或 `W/A/S/D`：移动当前所有 `YOU`/`YOU2` 对象。
-- `Z` 撤销、`Y` 重做、`R` 重开、`空格` 原地等待。
-- 左侧选择关卡，右侧显示当前生效的规则。手机屏幕有方向按钮，也支持在画布上滑动。
-- 游玩进度存放在当前浏览器本地。
+**6 个新关卡（26–31）**，累计 **31 关、68 项自动化测试**。除新增规则，还覆盖旧版关卡回归。
 
-## v0.2 更新内容
+1. **GROUP 基础成员语义**：`ROCK IS GROUP` 将岩石加入组；`GROUP IS PUSH`、`GROUP IS WIN`、`GROUP IS ROCK` 可以作用于组成员；支持多类成员、撤销与组句失效；`GROUP` 不生成普通实体。GROUP MAKE/HAS 的常见非递归目标也能展开。
+2. **字母拼词**：`type:'letter', word:'W'` 等字母对象可横向或纵向拼成词。例如 `FLAG IS W I N`、`R O C K IS PUSH`；多个字母都成为活跃词块；字母像其他文字一样能推动，`TEXT` 属性可作用到字母。
+3. **EMPTY 作为空格**：`EMPTY IS ROCK` 在真实空格生成岩石；`ROCK IS EMPTY` 移除岩石；`EMPTY IS NOT ROCK` 可否决生成；`EMPTY IS STOP` 会阻挡进入空格；单独 `EMPTY IS WIN` 不会让普通 Baba 自动获胜，`EMPTY IS YOU` 与 `EMPTY IS WIN` 同时有效则可获胜。空格不是普通实体，不会叠放到非空格。
+4. **GROUP 与 WORD 的组合**能让组成员以名词参与组句（非循环基础用例）。
+5. **UI**：字母砖块独立绘制、GROUP 成员虚线高亮、31 关关卡列表。
 
-本轮重点不是堆砌关卡，而是修复会导致解题逻辑失真的规则缺口。
+## 规则边界：不声称 1:1
 
-1. **WORD 正式工作**：具有 `WORD` 属性的实物可以代替对应名词词块参与组句；打断来源规则后，`WORD` 状态不会仅靠自身维持。
-2. **NOT 语义扩展**：`X IS NOT Y` 否决 `X IS Y` 的效果；`X IS NOT X` 导致 X 消失；连续两个 `NOT` 可抵消。修复 `NOT ROCK IS WIN` 被错误解析出 `ROCK IS WIN` 的问题。
-3. **碰撞规则修复**：`SWAP` 可与普通 `STOP` 交换位置；`WEAK` 物体在合适的接触或碰撞情况下被销毁；`YOU2` 参与 `WIN` 与 `DEFEAT` 结算。
-4. **移动正确性**：同一移动阶段跟踪已移动对象，避免同一个受控物体被重复处理；失败的推动链回滚状态；增加 `UP/RIGHT/DOWN/LEFT` 朝向属性。
-5. **5 个新关卡**：21 WORD、22 IS NOT STOP、23 IS NOT WALL、24 SWAP + NEAR 条件取消、25 WEAK。新增关卡均有可执行的通关序列测试。
-6. **47 项自动化测试**通过，并在 Chromium 中实测页面交互；移动端 390px 无横向溢出，触屏方向按钮可操作。
+目前已有多种文字规则/条件/碰撞机制，但以下仍是**未实现或未严格校准**：
 
-## 当前支持的主要语法
+- `EMPTY IS YOU` 的**移动行为**、`EMPTY IS PUSH`、`EMPTY` 的完整复杂交互/条件/自指结算；目前仅实现上面列出的明确子集。
+- GROUP 的递归成员关系、多个嵌套条件、完整 GROUP 条件展开与循环消歧。
+- 字母的关卡 Object Palette、部分重叠多字母歧义、特殊 `AB`/`BA` 多字母拼写限制。
+- `LEVEL`、`ALL` 的完整动态成员语义、`REVERT`、`MIMIC`、`WRITE` 等大量高级规则与原作精确的结算次序。
+- 更高难度且人工验证的中后期逻辑关卡、地图与编辑器、音效及无障碍。
 
-- 基础：`NOUN IS PROPERTY`、`NOUN IS NOUN`、`NOUN HAS NOUN`、`NOUN MAKE NOUN`。
-- 连接：`AND`、`NOT`（含简单双重否定）、`NOT NOUN` 主语。
-- 条件：`LONELY`、`ON`、`NEAR`、`FACING`、`WITHOUT`。
-- 机制：`YOU`、`YOU2`、`WIN`、`PUSH`、`STOP`、`PULL`、`MOVE`、`SINK`、`HOT`、`MELT`、`DEFEAT`、`OPEN`、`SHUT`、`SWAP`、`WEAK`、`WORD`、`FLOAT`、`TELE`、`SHIFT`、`SAFE`、`STILL`、朝向等。
+本项目不包含商业原作的地图、美术、音乐或音效，也没有使用官方代码。
 
-## 尚未实现或尚未与原作精确校准
+## 文件结构
 
-这**不是《Baba Is You》1:1 的完成品**。主要剩余问题：
-
-- `EMPTY`、`LEVEL`、`GROUP`、字母拼词系统，及复杂递归语法、极端 WORD 循环。
-- `REVERT`、`FEAR`、`FOLLOW`、`MORE`、`MIMIC`、`WRITE` 等高阶性质/运算符。
-- 某些堆叠、推拉、自动移动、传送、条件计算和销毁规则的原作精确结算顺序。
-- 更全面的行为一致性测试、真正复杂且经过人工解题验证的关卡、关卡编辑器、进度地图、无障碍支持、音效。
-- 本项目**不包含原作关卡、原声和原始美术资产**。
-
-## 文件
-
-| 文件 | 作用 |
+| 文件 | 用途 |
 | --- | --- |
-| `play.html` | 完全自包含的单文件网页版 |
-| `index.html` | 模块化网页入口 |
-| `engine.js` | 规则解析与世界结算 |
-| `levels.js` | 25 个原创机制关卡 |
-| `app.js` | UI、Canvas 画面和控制 |
-| `tests.js` | 47 项可运行回归测试 |
-| `CHANGELOG.md` | 版本记录与已知限制 |
+| `play.html` | 单文件可玩版本 |
+| `index.html` | GitHub Pages 网页入口 |
+| `engine.js` | 规则引擎（包含 EMPTY、GROUP、letters） |
+| `levels.js` | 31 个原创关卡 |
+| `app.js` | UI / Canvas 绘制 / 控制 |
+| `tests.js` | Node 回归测试 |
+| `CHANGELOG.md` | 更新记录 |
 
-## 下一阶段
+## 建议 Commit
 
-v0.3 不应只是增加更多简单关卡，应优先实现并检验完整的 **EMPTY 与 GROUP 语义**、增强句法解析和交叉文字测试，建立规则行为差异清单；之后逐步完善高阶移动与递归机制。只有规则引擎可信，才能把关卡难度推进到原作中后期的复杂程度。
+`feat: add EMPTY, GROUP and letter spelling mechanics with 6 new levels`

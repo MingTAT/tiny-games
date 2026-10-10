@@ -1,12 +1,13 @@
 /* Independent word-rule puzzle engine. No assets/code from Baba Is You. */
 (function (root) {
   'use strict';
-  const NOUNS = new Set('BABA KEKE FLAG WALL ROCK WATER LAVA SKULL KEY DOOR GRASS TREE BELT STAR GHOST LOVE BOX ICE HEDGE BUG FLOWER TEXT ALL'.split(' '));
-  const PHYSICAL_NOUNS = [...NOUNS].filter(x => !['TEXT','ALL'].includes(x));
-  const PROPS = new Set('YOU YOU2 WIN STOP PUSH PULL DEFEAT SINK HOT MELT OPEN SHUT WEAK FLOAT TELE SHIFT SWAP MOVE SAFE STILL RED BLUE WORD UP RIGHT DOWN LEFT'.split(' '));
+  const NOUNS = new Set('BABA KEKE FLAG WALL ROCK WATER LAVA SKULL KEY DOOR GRASS TREE BELT STAR GHOST LOVE BOX ICE HEDGE BUG FLOWER TEXT ALL EMPTY GROUP'.split(' '));
+  const PHYSICAL_NOUNS = [...NOUNS].filter(x => !['TEXT','ALL','EMPTY','GROUP'].includes(x));
+  const PROPS = new Set('YOU YOU2 WIN STOP PUSH PULL DEFEAT SINK HOT MELT OPEN SHUT WEAK FLOAT TELE SHIFT SWAP MOVE SAFE STILL RED BLUE WORD GROUP UP RIGHT DOWN LEFT'.split(' '));
   const VERBS = new Set(['IS','HAS','MAKE']);
   const CONDITIONS = new Set(['ON','NEAR','FACING','WITHOUT']);
   const WORDS = new Set([...NOUNS, ...PROPS, ...VERBS, ...CONDITIONS, 'AND', 'NOT', 'LONELY']);
+  const isText = o => o.type==='text' || o.type==='letter';
   const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];
   const clone = data => JSON.parse(JSON.stringify(data));
   const key = (x,y) => x+','+y;
@@ -42,7 +43,7 @@
     let targets = readList(verb === 'IS');
     if (!targets) return [];
     // A completed sentence may be the prefix of an unparseable tail.
-    const wordIds = ids.slice(start, i);
+    const wordIds = ids.slice(start, i).flat();
     const rules = [];
     for (const subject of subjects) for (const target of targets) {
       if (verb !== 'IS' && PROPS.has(target.value)) continue;
@@ -52,44 +53,80 @@
     return rules;
   }
 
+  // Tokens can be one whole word tile, an object with WORD, or a sequence
+  // of letter tiles. A single letter can belong to multiple words and rules.
   function parseRules(objects, width, height, wordIds=new Set()) {
     const occupied = new Map();
     for (const obj of objects) {
-      if (obj.type !== 'text' && !wordIds.has(obj.id)) continue;
-      const p = key(obj.x,obj.y);
-      if (!occupied.has(p)) occupied.set(p, []);
+      if (!isText(obj) && !wordIds.has(obj.id)) continue;
+      const p=key(obj.x,obj.y);
+      if(!occupied.has(p))occupied.set(p,[]);
       occupied.get(p).push(obj);
     }
-    let allRules=[], activeIds = new Set(), signatures = new Set();
-    for (const [dx,dy] of [[1,0],[0,1]]) {
-      for (let y=0;y<height;y++) for(let x=0;x<width;x++) {
-        if (!occupied.has(key(x,y))) continue;
-        if (occupied.has(key(x-dx,y-dy))) continue;
+    const allRules=[],activeIds=new Set(),signatures=new Set();
+    const validSpellings=new Set([...WORDS].filter(w=>w.length>1));
+    function emit(tokens,tokenIds) {
+      if(tokens.length<3)return;
+      // scanTokens can consume a sentence prefix; extra tiles on the same line
+      // do not invalidate it. Every logical token keeps its contributing ids.
+      for(const rule of scanTokens(tokens,tokenIds,0)) {
+        const signature=[rule.subject,rule.subjectNot,rule.verb,rule.target,rule.targetNot,
+          rule.lonely,JSON.stringify(rule.cond),rule.ids.join(':')].join('|');
+        if(signatures.has(signature))continue;
+        signatures.add(signature);allRules.push(rule);
+        rule.ids.forEach(id=>activeIds.add(id));
+      }
+    }
+    for(const [dx,dy] of [[1,0],[0,1]]) {
+      for(let y=0;y<height;y++)for(let x=0;x<width;x++) {
+        if(!occupied.has(key(x,y)) || occupied.has(key(x-dx,y-dy)))continue;
         const cells=[];
-        for (let cx=x,cy=y;cx>=0&&cy>=0&&cx<width&&cy<height&&occupied.has(key(cx,cy));cx+=dx,cy+=dy)
+        for(let cx=x,cy=y;cx>=0&&cy>=0&&cx<width&&cy<height&&occupied.has(key(cx,cy));cx+=dx,cy+=dy)
           cells.push(occupied.get(key(cx,cy)));
-        if (cells.length < 3) continue;
-        const paths=[];
-        function collect(index, chosen, ids) {
-          if(paths.length>512) return;
-          if(index>=cells.length) { paths.push({ tokens:chosen, ids }); return; }
-          for (const ob of cells[index]) collect(index+1, [...chosen,ob.type==='text'?ob.word:ob.type.toUpperCase()], [...ids,ob.id]);
-        }
-        collect(0,[],[]);
-        for (const { tokens, ids } of paths) for(let start=0; start<=tokens.length-3;start++) {
-          // A NOT prefix belongs to the following noun; do not parse a
-          // contradictory sub-sentence starting *inside* that prefix.
-          if(start>0 && tokens[start-1]==='NOT')continue;
-          for (const rule of scanTokens(tokens,ids,start)) {
-            const signature = [rule.subject,rule.subjectNot,rule.verb,rule.target,rule.targetNot,rule.lonely,JSON.stringify(rule.cond),rule.ids.join(':')].join('|');
-            if (signatures.has(signature)) continue;
-            signatures.add(signature); allRules.push(rule);
-            rule.ids.forEach(id=>activeIds.add(id));
+        if(cells.length<3)continue;
+        let paths=0;
+        function walk(i,tokens,tokenIds) {
+          if(++paths>9000 || tokens.length>16)return;
+          // Every stopping point is a possible completed sentence.
+          emit(tokens,tokenIds);
+          if(i>=cells.length)return;
+          for(const ob of cells[i]) {
+            if(ob.type==='letter') {
+              let spell='',letterIds=[];
+              for(let j=i;j<cells.length && j<i+12;j++) {
+                const letters=cells[j].filter(t=>t.type==='letter');
+                // Stacked letters are branched separately, not concatenated.
+                if(!letters.length)break;
+                // The common case is one letter per tile. For overlaps, fork
+                // prefixes recursively so all valid pairings can be reached.
+                function combinations(k,text,ids) {
+                  if(k>j) {
+                    if(validSpellings.has(text) && k-i>=2)
+                      walk(k,[...tokens,text],[...tokenIds,ids]);
+                    if(k>=cells.length || k-i>=12)return;
+                    const next=cells[k].filter(o=>o.type==='letter');
+                    for(const n of next)combinations(k+1,text+n.word,[...ids,n.id]);
+                    return;
+                  }
+                }
+                if(j===i)for(const first of letters) combinations(i+1,first.word,[first.id]);
+                break;
+              }
+            } else {
+              const token=isText(ob)?ob.word:ob.type.toUpperCase();
+              if(WORDS.has(token))walk(i+1,[...tokens,token],[...tokenIds,[ob.id]]);
+            }
           }
+        }
+        // Parsing can begin after unrelated text. A NOT prefix cannot be
+        // skipped to reinterpret NOT ROCK IS WIN as ROCK IS WIN.
+        for(let i=0;i<cells.length-2;i++) {
+          if(i && cells[i-1].some(o=>o.type==='text'&&o.word==='NOT'))continue;
+          walk(i,[],[]);
         }
       }
     }
-    return { rules:allRules, activeIds };
+    return {rules:allRules,activeIds};
   }
 
   class Game {
@@ -98,7 +135,7 @@
       if (!level || !Number.isInteger(level.width) || !Number.isInteger(level.height)) throw new Error('Invalid level dimensions');
       this.level=clone(level); this.width=level.width;this.height=level.height;
       this.objs=(level.objects||[]).map((o,i)=>({id:i+1,x:o.x,y:o.y,type:o.type||'text',...(o.word?{word:o.word.toUpperCase()}:{}),dir:o.dir??1}));
-      this.nextId=this.objs.length+1; this.history=[];this.future=[];this.turn=0;this.won=false;
+      this.groupIds=new Set();this.nextId=this.objs.length+1; this.history=[];this.future=[];this.turn=0;this.won=false;
       this.refresh();
     }
     snapshot(){return clone({objs:this.objs,nextId:this.nextId,turn:this.turn,won:this.won});}
@@ -110,7 +147,7 @@
     at(x,y){return this.objs.filter(o=>o.x===x&&o.y===y);}
     get(id){return this.objs.find(o=>o.id===id);}
     isMatch(obj,subject,subjectNot=false) {
-      let valid = subject==='ALL' ? obj.type!=='text' : subject==='TEXT' ? obj.type==='text' : obj.type.toUpperCase()===subject;
+      let valid = subject==='ALL' ? !isText(obj) && obj.type!=='empty' : subject==='TEXT' ? isText(obj) : subject==='GROUP' ? this.groupIds.has(obj.id) : subject==='EMPTY' ? obj.type==='empty' : obj.type.toUpperCase()===subject;
       return subjectNot ? !valid : valid;
     }
     condition(obj,rule) {
@@ -133,7 +170,8 @@
       const seen=new Set();
       for(let round=0;round<12;round++) {
         this.rules=result.rules;
-        const next=new Set(this.objs.filter(o=>o.type!=='text' && this.has(o,'WORD')).map(o=>o.id));
+        this.refreshGroups();
+        const next=new Set(this.objs.filter(o=>!isText(o) && this.has(o,'WORD')).map(o=>o.id));
         const signature=[...next].sort((a,b)=>a-b).join(',');
         if(signature===[...wordIds].sort((a,b)=>a-b).join(','))break;
         if(seen.has(signature)) break; // cyclic WORD patterns: terminate safely
@@ -141,10 +179,31 @@
         result=parseRules(this.objs,this.width,this.height,wordIds);
       }
       this.rules=result.rules;this.activeIds=result.activeIds;this.wordIds=wordIds;
+      this.refreshGroups();
     }
+    // GROUP is membership, not a physical object. Exclude GROUP-subject rules
+    // from the seed so self-referential GROUP statements do not bootstrap.
+    refreshGroups() {
+      this.groupIds=new Set();
+      for(let round=0;round<8;round++) {
+        const next=new Set(this.groupIds);
+        for(const o of this.objs) {
+          const direct=this.rules.filter(r=>r.subject!=='GROUP' && r.verb==='IS' &&
+            r.target==='GROUP' && this.isMatch(o,r.subject,r.subjectNot) && this.condition(o,r));
+          if(direct.some(r=>!r.targetNot) && !direct.some(r=>r.targetNot))next.add(o.id);
+        }
+        if(next.size===this.groupIds.size)break;
+        this.groupIds=next;
+      }
+    }
+    // EMPTY represents absence of any real entity; it never becomes an object
+    // in this.objs, so text/physics and empty-cell rules remain distinct.
+    emptyAt(x,y){return this.inside(x,y)&&this.at(x,y).length===0;}
+    emptyProxy(x,y){return {id:-1-x-y*this.width,x,y,type:'empty',dir:1};}
+    emptyHas(prop,x,y){return this.emptyAt(x,y)&&this.has(this.emptyProxy(x,y),prop);}
     applicable(obj,verb) {return this.rules.filter(r=>r.verb===verb && this.isMatch(obj,r.subject,r.subjectNot) && this.condition(obj,r));}
     props(obj) {
-      let set=new Set(obj.type==='text'?['PUSH']:[]), removes=new Set();
+      let set=new Set(isText(obj)?['PUSH']:[]), removes=new Set();
       for(const r of this.applicable(obj,'IS')) if(PROPS.has(r.target)) (r.targetNot?removes:set).add(r.target);
       for(const prop of removes) set.delete(prop);
       return set;
@@ -162,8 +221,9 @@
       // HAS spawns an object at the location where the source was destroyed.
       const spawns=[];
       for(const o of removed) for(const r of this.applicable(o,'HAS')) {
-        if(r.targetNot||!NOUNS.has(r.target)||r.target==='ALL') continue;
-        spawns.push({type:r.target==='TEXT'?'text':r.target.toLowerCase(),word:r.target==='TEXT'?o.type.toUpperCase():undefined,x:o.x,y:o.y,dir:o.dir});
+        if(r.targetNot||(!PHYSICAL_NOUNS.includes(r.target) && r.target!=='TEXT' && r.target!=='GROUP')) continue;
+        const targets=r.target==='GROUP'?[...new Set(this.objs.filter(k=>this.groupIds.has(k.id)&&!isText(k)).map(k=>k.type.toUpperCase()))]:[r.target];
+        for(const target of targets)spawns.push({type:target==='TEXT'?'text':target.toLowerCase(),word:target==='TEXT'?o.type.toUpperCase():undefined,x:o.x,y:o.y,dir:o.dir});
       }
       this.objs=this.objs.filter(o=>!ids.has(o.id));
       for(const s of spawns) this.add(s.type,s.x,s.y,s.dir,s.word);
@@ -181,6 +241,9 @@
         if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')) {this.destroy(new Set([id]));movedIds.add(id);return true;}
         return false;
       }
+      // Entering a truly empty space can itself be blocked by EMPTY IS STOP.
+      // (EMPTY IS PUSH / EMPTY IS YOU have additional behaviors not claimed.)
+      if(this.emptyHas('STOP',nx,ny) && !this.has(obj,'FLOAT'))return false;
       const backup=this.snapshot(), movedBackup=new Set(movedIds);
       const source={x:obj.x,y:obj.y};
       const rollback=()=>{this.restore(backup);movedIds.clear();for(const mid of movedBackup)movedIds.add(mid);chain.delete(id);return false;};
@@ -221,8 +284,8 @@
         const forbidden=new Set(rules.filter(r=>r.targetNot).map(r=>r.target));
         const original=obj.type.toUpperCase();
         // X IS NOT X destroys X; excludes any other transformations in that phase.
-        if(forbidden.has(original)) {erased.add(obj.id);continue;}
-        const positive=rules.filter(r=>!r.targetNot&&r.target!=='ALL'&&!forbidden.has(r.target));
+        if(forbidden.has(original) || rules.some(r=>!r.targetNot&&r.target==='EMPTY')) {erased.add(obj.id);continue;}
+        const positive=rules.filter(r=>!r.targetNot && (PHYSICAL_NOUNS.includes(r.target)||r.target==='TEXT') && !forbidden.has(r.target));
         if(positive.some(r=>r.target===original))continue;
         const targets=[...new Set(positive.map(r=>r.target))].filter(t=>t!==original);
         if(targets.length)converted.push({obj,targets});
@@ -236,15 +299,30 @@
         if(first==='TEXT')source.word=originalType.toUpperCase();else delete source.word;
         for(const t of rest)this.add(t==='TEXT'?'text':t.toLowerCase(),obj.x,obj.y,obj.dir,t==='TEXT'?originalType.toUpperCase():undefined);
       }
-      if(converted.length||erased.size)this.refresh();
+      // EMPTY IS NOUN: fill each unoccupied tile exactly once in this phase.
+      // Snapshot empties before spawning so iteration cannot grow forever.
+      const emptyRules=this.rules.filter(r=>r.subject==='EMPTY'&&r.verb==='IS'&&PHYSICAL_NOUNS.includes(r.target));
+      let filled=0;
+      if(emptyRules.length)for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++) {
+        if(!this.emptyAt(x,y))continue;
+        const empty=this.emptyProxy(x,y);
+        const matching=emptyRules.filter(r=>this.condition(empty,r));
+        const forbidden=new Set(matching.filter(r=>r.targetNot).map(r=>r.target));
+        const targets=[...new Set(matching.filter(r=>!r.targetNot&&!forbidden.has(r.target)).map(r=>r.target))];
+        for(const type of targets){this.add(type.toLowerCase(),x,y);filled++;}
+      }
+      if(converted.length||erased.size||filled)this.refresh();
     }
     make() {
       const spawned=[];
       for(const obj of [...this.objs]) for(const r of this.applicable(obj,'MAKE')) {
-        if(r.targetNot || !NOUNS.has(r.target) || r.target==='ALL')continue;
-        const t=r.target==='TEXT'?'text':r.target.toLowerCase();
-        if(this.at(obj.x,obj.y).some(other=>other.type===t && (t!=='text'||other.word===obj.type.toUpperCase())))continue;
-        spawned.push({t,x:obj.x,y:obj.y,dir:obj.dir,word:t==='text'?obj.type.toUpperCase():undefined});
+        if(r.targetNot || (!PHYSICAL_NOUNS.includes(r.target)&&r.target!=='TEXT'&&r.target!=='GROUP'))continue;
+        const targets=r.target==='GROUP'?[...new Set(this.objs.filter(o=>this.groupIds.has(o.id)&&!isText(o)).map(o=>o.type.toUpperCase()))]:[r.target];
+        for(const target of targets){
+          const t=target==='TEXT'?'text':target.toLowerCase();
+          if(this.at(obj.x,obj.y).some(other=>other.type===t && (t!=='text'||other.word===obj.type.toUpperCase())))continue;
+          spawned.push({t,x:obj.x,y:obj.y,dir:obj.dir,word:t==='text'?obj.type.toUpperCase():undefined});
+        }
       }
       for(const s of spawned)this.add(s.t,s.x,s.y,s.dir,s.word);
       if(spawned.length)this.refresh();
@@ -297,6 +375,11 @@
         }
       }
       this.destroy(kills);
+      // EMPTY is a virtual cell; it does not coexist with a player. Two
+      // properties on EMPTY itself can, however, win on the same empty cell.
+      for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++) {
+        if(this.emptyHas('YOU',x,y) && this.emptyHas('WIN',x,y)){this.won=true;return;}
+      }
       for(const o of this.objs)if((this.has(o,'YOU')||this.has(o,'YOU2'))&&this.has(o,'WIN')){this.won=true;return;}
       for(const a of this.objs)if(this.has(a,'YOU')||this.has(a,'YOU2')){
         for(const b of this.at(a.x,a.y))if(a.id!==b.id&&this.sameFloat(a,b)&&this.has(b,'WIN')){this.won=true;return;}
@@ -322,7 +405,7 @@
     }
   }
 
-  const api={Game,parseRules,scanTokens,NOUNS,PROPS,VERBS,WORDS,DIRS};
+  const api={Game,parseRules,scanTokens,NOUNS,PHYSICAL_NOUNS,PROPS,VERBS,WORDS,DIRS};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.BabaCore=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
