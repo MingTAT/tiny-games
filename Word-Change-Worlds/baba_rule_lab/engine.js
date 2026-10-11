@@ -3,8 +3,8 @@
   'use strict';
   const NOUNS = new Set('BABA KEKE FLAG WALL ROCK WATER LAVA SKULL KEY DOOR GRASS TREE BELT STAR GHOST LOVE BOX ICE HEDGE BUG FLOWER TEXT ALL EMPTY GROUP'.split(' '));
   const PHYSICAL_NOUNS = [...NOUNS].filter(x => !['TEXT','ALL','EMPTY','GROUP'].includes(x));
-  const PROPS = new Set('YOU YOU2 WIN STOP PUSH PULL DEFEAT SINK HOT MELT OPEN SHUT WEAK FLOAT TELE SHIFT SWAP MOVE SAFE STILL RED BLUE WORD GROUP UP RIGHT DOWN LEFT'.split(' '));
-  const VERBS = new Set(['IS','HAS','MAKE']);
+  const PROPS = new Set('YOU YOU2 WIN STOP PUSH PULL DEFEAT SINK HOT MELT OPEN SHUT WEAK FLOAT TELE SHIFT SWAP MOVE SAFE STILL PHANTOM RED BLUE WORD GROUP UP RIGHT DOWN LEFT'.split(' '));
+  const VERBS = new Set(['IS','HAS','MAKE','EAT']);
   const CONDITIONS = new Set(['ON','NEAR','FACING','WITHOUT']);
   const WORDS = new Set([...NOUNS, ...PROPS, ...VERBS, ...CONDITIONS, 'AND', 'NOT', 'LONELY']);
   const isText = o => o.type==='text' || o.type==='letter';
@@ -209,6 +209,12 @@
       return set;
     }
     has(obj,prop) {return this.props(obj).has(prop);}
+    // EAT is a directional relation between two entities, not an IS property.
+    // EAT actions respect per-instance conditions and float layers.
+    eats(eater, target) {
+      return eater.id!==target.id && this.sameFloat(eater,target) &&
+        this.applicable(eater,'EAT').some(r=>this.isMatch(target,r.target,r.targetNot));
+    }
     sameFloat(a,b){return this.has(a,'FLOAT')===this.has(b,'FLOAT');}
     add(type,x,y,dir=1,word) {
       if (!this.inside(x,y)) return null;
@@ -243,7 +249,7 @@
       }
       // Entering a truly empty space can itself be blocked by EMPTY IS STOP.
       // (EMPTY IS PUSH / EMPTY IS YOU have additional behaviors not claimed.)
-      if(this.emptyHas('STOP',nx,ny) && !this.has(obj,'FLOAT'))return false;
+      if(this.emptyHas('STOP',nx,ny) && !this.has(obj,'PHANTOM'))return false;
       const backup=this.snapshot(), movedBackup=new Set(movedIds);
       const source={x:obj.x,y:obj.y};
       const rollback=()=>{this.restore(backup);movedIds.clear();for(const mid of movedBackup)movedIds.add(mid);chain.delete(id);return false;};
@@ -251,16 +257,24 @@
       const occupants=this.at(nx,ny).filter(o=>o.id!==id&&this.sameFloat(obj,o));
       for(const target of occupants) {
         if(!this.get(target.id))continue;
+        // A moving EAT unit may consume STOP/PUSH targets on collision, but
+        // only commit that consumption if the entire attempted move succeeds.
+        if(!this.has(obj,'PHANTOM') && this.eats(obj,target) && !this.has(target,'SAFE')) {
+          this.destroy(new Set([target.id]));
+          continue;
+        }
         const unlock=(this.has(obj,'OPEN')&&this.has(target,'SHUT'))||(this.has(obj,'SHUT')&&this.has(target,'OPEN'));
         if(unlock && this.has(target,'STOP')){
           this.destroy(new Set([obj.id,target.id]));movedIds.add(id);chain.delete(id);return true;
         }
         // SWAP bypasses STOP/PUSH; objects moving into or out of SWAP switch places.
-        if(this.has(obj,'SWAP')||this.has(target,'SWAP')) {
+        if(this.has(obj,'PHANTOM')) {
+          continue; // bypass obstacles; overlap effects still resolve
+        } else if(this.has(obj,'SWAP')||this.has(target,'SWAP')) {
           target.x=source.x;target.y=source.y;movedIds.add(target.id);
         } else if(this.has(target,'PUSH')) {
           if(!this.attempt(target.id,dx,dy,chain,false,movedIds))return rollback();
-        } else if(this.has(target,'STOP')) {
+        } else if(this.has(target,'STOP') || this.has(target,'PULL')) {
           // A non-pushable WEAK STOP may be entered; overlap reaction removes it.
           if(this.has(target,'WEAK')&&this.sameFloat(obj,target))continue;
           if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')){
@@ -272,8 +286,11 @@
       const moved=this.get(id);
       if(moved){moved.x=nx;moved.y=ny;moved.dir=DIRS.findIndex(d=>d[0]===dx&&d[1]===dy);movedIds.add(id);}
       if(allowPull) {
-        const trailing=this.at(source.x-dx,source.y-dy).filter(o=>o.id!==id&&this.sameFloat(obj,o)&&this.has(o,'PULL'));
-        for(const pulled of trailing) this.attempt(pulled.id,dx,dy,new Set(),false,movedIds);
+        const trailing=this.at(source.x-dx,source.y-dy).filter(o=>o.id!==id&&this.has(o,'PULL'));
+        // The pulled object can pull one behind it, yielding arbitrary chains.
+        // A blocked follower is left behind; movement of the leader commits.
+        for(const pulled of trailing) if(!movedIds.has(pulled.id))
+          this.attempt(pulled.id,dx,dy,new Set(),true,movedIds);
       }
       chain.delete(id);return true;
     }
@@ -340,13 +357,26 @@
       for(const tile of shiftTiles) for(const obj of this.at(tile.x,tile.y)) if(obj.id!==tile.id&&this.sameFloat(tile,obj)) shifts.push({id:obj.id,dir:tile.dir});
       for(const s of shifts) {const o=this.get(s.id);if(o){const [dx,dy]=DIRS[s.dir];this.attempt(s.id,dx,dy);}}
       this.refresh();
+      // TELE networks are grouped by physical type, not merely by TELE status.
+      // The original chooses randomly with 3+ destinations. This engine uses
+      // deterministic next-in-ID order so replays/undo remain reproducible.
       const portals=this.objs.filter(o=>this.has(o,'TELE'));
       if(portals.length>1){
+        const byType=new Map();
+        for(const p of portals) {
+          if(!byType.has(p.type))byType.set(p.type,[]);
+          byType.get(p.type).push(p);
+        }
         const moves=[];
         for(const obj of this.objs) {
-          if(portals.some(t=>t.id===obj.id))continue;
-          const start=portals.findIndex(t=>t.x===obj.x&&t.y===obj.y&&this.sameFloat(t,obj));
-          if(start>=0){const dest=portals[(start+1)%portals.length];moves.push({id:obj.id,x:dest.x,y:dest.y});}
+          const sources=portals.filter(p=>p.id!==obj.id && p.x===obj.x && p.y===obj.y && this.sameFloat(p,obj));
+          // A TELE tile can itself be teleported by an unlike TELE tile.
+          // Each unit teleports at most once in a turn.
+          const source=sources.find(p=>(byType.get(p.type)||[]).length>1);
+          if(!source)continue;
+          const network=byType.get(source.type);
+          const dest=network[(network.indexOf(source)+1)%network.length];
+          moves.push({id:obj.id,x:dest.x,y:dest.y});
         }
         for(const m of moves){const o=this.get(m.id);if(o){o.x=m.x;o.y=m.y;}}
       }
@@ -372,6 +402,8 @@
           if(bp.has('OPEN')&&ap.has('SHUT')){if(!ap.has('SAFE'))kills.add(a.id);if(!bp.has('SAFE'))kills.add(b.id);}
           if(ap.has('WEAK')&&!ap.has('SAFE'))kills.add(a.id);
           if(bp.has('WEAK')&&!bp.has('SAFE'))kills.add(b.id);
+          if(this.eats(a,b) && !bp.has('SAFE'))kills.add(b.id);
+          if(this.eats(b,a) && !ap.has('SAFE'))kills.add(a.id);
         }
       }
       this.destroy(kills);

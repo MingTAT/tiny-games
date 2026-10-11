@@ -16,7 +16,7 @@ function levelMenu(){let out='';for(let i=0;i<levels.length;i++){
  }$('level-list').innerHTML=out;$('level-list').querySelectorAll('button').forEach(btn=>btn.onclick=()=>load(Number(btn.dataset.level)));}
 function update(){levelMenu();const all=game.rules.map(r=>`${r.lonely?'LONELY ':''}${r.subjectNot?'NOT ':''}${r.subject}${r.cond?' '+r.cond.type+' '+(r.cond.not?'NOT ':'')+r.cond.target:''} ${r.verb} ${r.targetNot?'NOT ':''}${r.target}`);
  const unique=[...new Set(all)];$('rules').innerHTML=unique.length?unique.map(s=>{
- const m=s.match(/^(.*?) (IS|HAS|MAKE) (.*?)$/);
+ const m=s.match(/^(.*?) (IS|HAS|MAKE|EAT) (.*?)$/);
  return `<div class="rule-row"><span class="subject">${m?m[1]:s}</span> <span class="verb">${m?m[2]:''}</span> <span class="result">${m?m[3]:''}</span></div>`;
  }).join(''):'<div class="empty-rules">没有任何可识别的句子。你可能失去了控制对象，也可能发现了真正的自由。</div>';
  $('status').innerHTML=game.won?'<b>✦ 关卡完成</b>':(game.objs.some(o=>game.has(o,'YOU')||game.has(o,'YOU2'))||game.rules.some(r=>r.subject==='EMPTY'&&r.target==='YOU'&&!r.targetNot))?'<b>●</b> 世界规则实时生效':'<b>!</b> 当前没有 YOU：可以撤销或修改规则';

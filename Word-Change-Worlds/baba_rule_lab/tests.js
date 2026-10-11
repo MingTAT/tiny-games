@@ -8,8 +8,8 @@ function thing(type,x,y,dir=1){return {type,x,y,dir};}
 function words(string,x,y,dx=1,dy=0){return string.split(' ').map((word,i)=>({type:'text',word,x:x+i*dx,y:y+i*dy}));}
 const obj=(game,type)=>game.objs.filter(o=>o.type===type);
 
-test('31 authored levels initialize and basic expected rules parse',()=>{
- assert.equal(levels.length,31);
+test('37 authored levels initialize and parse their rules',()=>{
+ assert.equal(levels.length,37);
  for(const l of levels){const game=new Game(l);assert(game.rules.some(r=>r.verb==='IS'));game.step(null);}
 });
 test('IS YOU permits movement; undo and redo restore state',()=>{
@@ -343,6 +343,89 @@ test('30 EMPTY IS ROCK fills world and provides WIN rocks',()=>{
 test('31 EMPTY IS YOU AND WIN wins by shared empty properties',()=>{
  const game=new Game(levels[30]);
  game.step(0);assert(!game.won);game.step(0);assert(game.won);
+});
+
+
+// v0.4: new mechanics and level regression tests.
+test('EAT consumes STOP wall on attempted collision',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA EAT WALL',0,2),...words('WALL IS STOP',0,4),thing('baba',6,7),thing('wall',7,7)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);assert.equal(obj(game,'wall').length,0);
+});
+test('EAT can consume overlapped objects while waiting',()=>{
+ const game=g([...words('BABA EAT WALL',0,0),thing('baba',7,7),thing('wall',7,7)]);
+ game.step(null);assert.equal(obj(game,'wall').length,0);
+});
+test('SAFE STOP wall survives EAT and blocks movement',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA EAT WALL',0,2),...words('WALL IS STOP',0,4),...words('WALL IS SAFE',0,6),thing('baba',7,8),thing('wall',8,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);assert.equal(obj(game,'wall').length,1);
+});
+test('EAT only commits a partial collision if all blockers permit movement',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA EAT WALL',0,2),...words('WALL IS STOP',0,4),...words('DOOR IS STOP',0,6),thing('baba',6,8),thing('wall',7,8),thing('door',7,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'wall').length,1);
+});
+test('EAT triggers HAS and can undo the chain reaction',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA EAT WALL',0,2),...words('WALL HAS KEY',0,4),...words('WALL IS STOP',0,6),thing('baba',6,8),thing('wall',7,8)]);
+ game.step(1);assert.equal(obj(game,'wall').length,0);assert.equal(obj(game,'key').length,1);
+ assert(game.undo());assert.equal(obj(game,'wall').length,1);assert.equal(obj(game,'key').length,0);
+});
+test('PULL alone blocks entry',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('ROCK IS PULL',0,2),thing('baba',6,8),thing('rock',7,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('PULL drags two consecutive followers',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('ROCK IS PULL',0,2),thing('rock',4,8),thing('rock',5,8),thing('baba',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);assert.deepEqual(obj(game,'rock').map(r=>r.x),[5,6]);
+});
+test('PULL can follow across mismatching FLOAT layers',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('ROCK IS PULL',0,4),thing('rock',5,8),thing('baba',6,8)]);
+ game.step(1);assert.equal(obj(game,'rock')[0].x,6);
+});
+test('PHANTOM crosses STOP and PUSH without displacement',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS PHANTOM',0,2),...words('ROCK IS PUSH',0,4),...words('WALL IS STOP',0,6),thing('baba',6,8),thing('rock',7,8),thing('wall',7,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);assert.equal(obj(game,'rock')[0].x,7);
+});
+test('PHANTOM overlap remains vulnerable to DEFEAT',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS PHANTOM',0,2),...words('SKULL IS DEFEAT',0,4),thing('baba',6,8),thing('skull',7,8)]);
+ game.step(1);assert.equal(obj(game,'baba').length,0);
+});
+test('TELE uses same-type portals, ignoring other TELE types',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('STAR IS TELE',0,2),...words('ROCK IS TELE',0,4),thing('star',5,8),thing('rock',6,8),thing('rock',10,8),thing('star',11,8),thing('baba',4,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,11);
+});
+test('a lone TELE star does not use ROCK portal as destination',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('STAR IS TELE',0,2),...words('ROCK IS TELE',0,4),thing('star',5,8),thing('rock',10,8),thing('baba',4,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,5);
+});
+test('TELE destination may differ in FLOAT layer',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('STAR IS TELE',0,2),...words('STAR ON ROCK IS FLOAT',0,4),thing('star',5,8),thing('star',10,8),thing('rock',10,8),thing('baba',4,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,10);
+});
+test('32 assembling EAT WALL allows passing STOP barrier',()=>{
+ const game=new Game(levels[31]);game.step(0);game.step(0);assert(game.rules.some(r=>r.verb==='EAT'));
+ for(let i=0;i<3;i++)game.step(2);for(let i=0;i<9;i++)game.step(1);assert(game.won);
+});
+test('33 PULL removes STOP word from rule, opening wall',()=>{
+ const game=new Game(levels[32]);assert(game.has(game.at(8,4)[0],'STOP'));
+ game.step(1);assert(!game.has(game.at(8,4)[0],'STOP'));
+ for(let i=0;i<7;i++)game.step(1);assert(game.won);
+});
+test('34 assembling PHANTOM permits walking through the wall',()=>{
+ const game=new Game(levels[33]);game.step(0);game.step(0);assert(game.has(obj(game,'baba')[0],'PHANTOM'));
+ for(let i=0;i<3;i++)game.step(2);for(let i=0;i<9;i++)game.step(1);assert(game.won);
+});
+test('35 breaking SAFE protects nothing against EAT',()=>{
+ const game=new Game(levels[34]);assert(game.has(game.at(8,8)[0],'SAFE'));
+ game.step(0);game.step(0);assert(!game.has(game.at(8,8)[0],'SAFE'));
+ for(let i=0;i<3;i++)game.step(2);for(let i=0;i<9;i++)game.step(1);assert(game.won);
+});
+test('36 STAR TELE and ROCK TELE remain separate',()=>{
+ const game=new Game(levels[35]);game.step(1);assert.equal(obj(game,'baba')[0].x,11);
+ game.step(1);game.step(1);assert(game.won);
+});
+test('37 EAT WALL + WALL HAS ROCK + ROCK IS WIN wins',()=>{
+ const game=new Game(levels[36]);game.step(0);game.step(0);assert(game.rules.some(r=>r.verb==='EAT'));
+ for(let i=0;i<3;i++)game.step(2);for(let i=0;i<4;i++)game.step(1);
+ assert(game.won);assert(game.at(8,8).some(o=>o.type==='rock'));
 });
 
 console.log(`\n${passed} tests passed`);

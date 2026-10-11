@@ -161,6 +161,37 @@ create('31 · 空白本身获胜','EMPTY · YOU 与 WIN','让 EMPTY 同时拥有
  words('BABA IS YOU',1,1);words('EMPTY IS YOU AND',2,4);words('WIN',6,6);o('baba',6,7);
 });
 
+// v0.4: collision-order puzzles, including EAT, SAFE, PULL, PHANTOM and TELE networks.
+create('32 · 吃掉挡路的墙','EAT · 碰撞先于阻挡','拼成 BABA EAT WALL，原本无法穿过的 STOP 墙就能被吃掉。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('BABA EAT',2,4);words('WALL',4,6);o('baba',4,7);col('wall',8,0,11);o('flag',13,8);
+});
+create('33 · 拖走最后一个词','PULL · 牵引文字','TEXT IS PULL：先用 ROCK 锚定 WALL 文本，再从右侧牵引 STOP 和 IS，拆掉墙的 STOP。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('TEXT IS PULL',1,2);
+ words('TEXT ON ROCK IS STILL',1,3);words('WALL IS STOP',2,4);o('rock',2,4);
+ o('baba',5,4);col('wall',8,0,11);o('flag',13,4);
+});
+create('34 · 穿过文字的法律','PHANTOM · 绕过碰撞','把 PHANTOM 推到 BABA IS 后面，不必拆墙，也可以穿过 STOP 与 PUSH。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('BABA IS',2,4);words('PHANTOM',4,6);o('baba',4,7);col('wall',8,0,11);o('flag',13,8);
+});
+create('35 · 先解除保护','SAFE × EAT × NOT','墙既是 STOP 又是 SAFE，单纯 EAT 不管用。先组成 WALL IS NOT SAFE。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('WALL IS SAFE',6,1);words('BABA EAT WALL',6,3);
+ words('WALL IS NOT',1,4);words('SAFE',4,6);o('baba',4,7);col('wall',8,0,11);o('flag',13,8);
+});
+create('36 · 两套传送网络','TELE · 传送门不混线','STAR 与 ROCK 都有 TELE，但星星只能传到星星，岩石只能传到岩石。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('FLAG IS WIN',11,1);words('WALL IS STOP',1,2);
+ words('STAR IS TELE',1,3);words('ROCK IS TELE',9,3);
+ col('wall',8,0,11);o('baba',4,8);o('flag',13,8);o('star',5,8);o('star',11,8);
+ o('rock',6,9);o('rock',12,9);
+});
+create('37 · 吃掉它，创造终点','EAT × HAS · 连锁结算','组装 EAT，墙被吞掉时 HAS 产生岩石；站到新岩石上即可获胜。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS WIN',11,1);
+ words('WALL IS STOP',1,2);words('WALL HAS ROCK',8,3);
+ words('BABA EAT',2,4);words('WALL',4,6);o('baba',4,7);col('wall',8,0,11);
+});
+
 const exported={levels};
 if(typeof module!=='undefined'&&module.exports)module.exports=exported;
 root.BabaLevels=exported;
