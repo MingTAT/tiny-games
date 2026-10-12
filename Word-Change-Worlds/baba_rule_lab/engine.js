@@ -118,10 +118,13 @@
             }
           }
         }
-        // Parsing can begin after unrelated text. A NOT prefix cannot be
-        // skipped to reinterpret NOT ROCK IS WIN as ROCK IS WIN.
+        // A sentence may begin after unrelated text, but not inside a
+        // condition, negated noun, connective, or prefix expression.
+        // Otherwise TEXT ON WALL IS STILL spuriously creates the global
+        // rule WALL IS STILL as well as its conditional TEXT rule.
+        const dependentPrefixes=new Set(['NOT','ON','NEAR','FACING','WITHOUT','AND','LONELY']);
         for(let i=0;i<cells.length-2;i++) {
-          if(i && cells[i-1].some(o=>o.type==='text'&&o.word==='NOT'))continue;
+          if(i && cells[i-1].some(o=>o.type==='text'&&dependentPrefixes.has(o.word)))continue;
           walk(i,[],[]);
         }
       }
@@ -247,14 +250,27 @@
         if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')) {this.destroy(new Set([id]));movedIds.add(id);return true;}
         return false;
       }
-      // Entering a truly empty space can itself be blocked by EMPTY IS STOP.
-      // (EMPTY IS PUSH / EMPTY IS YOU have additional behaviors not claimed.)
-      if(this.emptyHas('STOP',nx,ny) && !this.has(obj,'PHANTOM'))return false;
+      // EMPTY is not an object: its PUSH cells only yield when their chain of
+      // vacant squares ends in an occupied square. There is no last EMPTY
+      // beyond a board edge to receive the push, so that whole chain blocks.
+      // An occupied cell is not EMPTY even if its occupant lacks STOP.
+      if(this.emptyAt(nx,ny) && !this.has(obj,'PHANTOM')) {
+        const empty=this.emptyProxy(nx,ny);
+        const isPush=this.has(empty,'PUSH');
+        if(isPush){
+          let cx=nx,cy=ny;
+          while(this.inside(cx,cy) && this.emptyAt(cx,cy)){cx+=dx;cy+=dy;}
+          if(!this.inside(cx,cy))return false;
+        } else if(this.has(empty,'STOP') || this.has(empty,'PULL'))return false;
+      }
       const backup=this.snapshot(), movedBackup=new Set(movedIds);
       const source={x:obj.x,y:obj.y};
       const rollback=()=>{this.restore(backup);movedIds.clear();for(const mid of movedBackup)movedIds.add(mid);chain.delete(id);return false;};
       chain.add(id);
-      const occupants=this.at(nx,ny).filter(o=>o.id!==id&&this.sameFloat(obj,o));
+      // PUSH ignores FLOAT layers, but solid STOP / PULL interactions and
+      // collisions otherwise require matching layers.
+      const occupants=this.at(nx,ny).filter(o=>o.id!==id &&
+        (this.sameFloat(obj,o) || this.has(o,'PUSH')));
       for(const target of occupants) {
         if(!this.get(target.id))continue;
         // A moving EAT unit may consume STOP/PUSH targets on collision, but
@@ -263,18 +279,20 @@
           this.destroy(new Set([target.id]));
           continue;
         }
-        const unlock=(this.has(obj,'OPEN')&&this.has(target,'SHUT'))||(this.has(obj,'SHUT')&&this.has(target,'OPEN'));
+        if(!this.sameFloat(obj,target) && !this.has(target,'PUSH')) continue;
+        const unlock=this.sameFloat(obj,target) &&
+          ((this.has(obj,'OPEN')&&this.has(target,'SHUT'))||(this.has(obj,'SHUT')&&this.has(target,'OPEN')));
         if(unlock && this.has(target,'STOP')){
           this.destroy(new Set([obj.id,target.id]));movedIds.add(id);chain.delete(id);return true;
         }
         // SWAP bypasses STOP/PUSH; objects moving into or out of SWAP switch places.
         if(this.has(obj,'PHANTOM')) {
           continue; // bypass obstacles; overlap effects still resolve
-        } else if(this.has(obj,'SWAP')||this.has(target,'SWAP')) {
+        } else if(this.sameFloat(obj,target) && (this.has(obj,'SWAP')||this.has(target,'SWAP'))) {
           target.x=source.x;target.y=source.y;movedIds.add(target.id);
         } else if(this.has(target,'PUSH')) {
           if(!this.attempt(target.id,dx,dy,chain,false,movedIds))return rollback();
-        } else if(this.has(target,'STOP') || this.has(target,'PULL')) {
+        } else if(this.sameFloat(obj,target) && (this.has(target,'STOP') || this.has(target,'PULL'))) {
           // A non-pushable WEAK STOP may be entered; overlap reaction removes it.
           if(this.has(target,'WEAK')&&this.sameFloat(obj,target))continue;
           if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')){
@@ -344,7 +362,7 @@
       for(const s of spawned)this.add(s.t,s.x,s.y,s.dir,s.word);
       if(spawned.length)this.refresh();
     }
-    autonomous() {
+    autonomousMovement() {
       const movers=this.objs.filter(o=>this.has(o,'MOVE')).map(o=>o.id);
       for(const id of movers) {
         const o=this.get(id);if(!o)continue;
@@ -355,8 +373,18 @@
       const shiftTiles=this.objs.filter(o=>this.has(o,'SHIFT'));
       const shifts=[];
       for(const tile of shiftTiles) for(const obj of this.at(tile.x,tile.y)) if(obj.id!==tile.id&&this.sameFloat(tile,obj)) shifts.push({id:obj.id,dir:tile.dir});
-      for(const s of shifts) {const o=this.get(s.id);if(o){const [dx,dy]=DIRS[s.dir];this.attempt(s.id,dx,dy);}}
+      // A unit can be shifted only once within a SHIFT movement stage.
+      // This also prevents an object receiving two overlapping belt directions
+      // from being transported two cells in the same stage.
+      const shiftedIds=new Set();
+      for(const s of shifts) {const o=this.get(s.id);if(o&&!shiftedIds.has(s.id)){
+        const [dx,dy]=DIRS[s.dir];this.attempt(s.id,dx,dy,new Set(),true,shiftedIds);
+      }}
       this.refresh();
+    }
+    // Transport is resolved after transformations: a freshly transformed
+    // portal can apply in this turn, while a transformed-away portal cannot.
+    transport() {
       // TELE networks are grouped by physical type, not merely by TELE status.
       // The original chooses randomly with 3+ destinations. This engine uses
       // deterministic next-in-ID order so replays/undo remain reproducible.
@@ -381,6 +409,29 @@
         for(const m of moves){const o=this.get(m.id);if(o){o.x=m.x;o.y=m.y;}}
       }
       this.refresh();
+    }
+    // EMPTY IS YOU controls every vacant cell for the active input stage.
+    // Empty locations themselves remain virtual and never occupy a tile.
+    // In particular a vacant square may push a PUSH object, but it cannot
+    // overlap something to collect WIN, and no 'empty object' is persisted.
+    emptyControls(dx,dy,movedIds) {
+      const cells=[];
+      for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++)
+        if(this.emptyHas('YOU',x,y)||this.emptyHas('YOU2',x,y))cells.push({x,y});
+      cells.sort((a,b)=>dx ? dx*(b.x-a.x) : dy*(b.y-a.y));
+      const pushed=new Set();
+      for(const {x,y} of cells){
+        if(!this.emptyAt(x,y))continue;
+        const nx=x+dx,ny=y+dy;
+        if(!this.inside(nx,ny))continue;
+        // EMPTY's motion into an occupied cell can push solids, but does not
+        // become a real object, nor can it push the same target twice per turn.
+        for(const target of this.at(nx,ny)) {
+          if(!this.has(target,'PUSH') || movedIds.has(target.id) || pushed.has(target.id))continue;
+          pushed.add(target.id);
+          this.attempt(target.id,dx,dy,new Set(),true,movedIds);
+        }
+      }
     }
     effects() {
       // Resolve destructive reactions before winning, like the original's broad ordering.
@@ -431,8 +482,13 @@
         const controllers=this.objs.filter(o=>this.has(o,'YOU')||this.has(o,'YOU2')).map(o=>o.id);
         controllers.sort((a,b)=>{const A=this.get(a),B=this.get(b);return dx ? dx*(B.x-A.x) : dy*(B.y-A.y);});
         for(const id of controllers) {const o=this.get(id);if(o&&!movedIds.has(id)) {o.dir=dir;this.attempt(id,dx,dy,new Set(),true,movedIds);}}
+        this.refresh();
+        this.emptyControls(dx,dy,movedIds);
       }
-      this.refresh();this.transforms();this.make();this.autonomous();this.effects();this.refresh();this.turn++;
+      // Movement stages happen before conversion / creation. All stages
+      // refresh the active rules so moving text has immediate consequences.
+      this.refresh();this.autonomousMovement();this.refresh();
+      this.transforms();this.make();this.transport();this.effects();this.refresh();this.turn++;
       return true;
     }
   }

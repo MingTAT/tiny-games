@@ -159,6 +159,10 @@ create('30 · 空白变成实体','EMPTY · 空格变形','把 ROCK 补上 EMPTY
 });
 create('31 · 空白本身获胜','EMPTY · YOU 与 WIN','让 EMPTY 同时拥有 YOU 和 WIN，空格自己便可以达成胜利，而不需要把 Baba 放进空格。',({o,words})=>{
  words('BABA IS YOU',1,1);words('EMPTY IS YOU AND',2,4);words('WIN',6,6);o('baba',6,7);
+ // Anchor the existing rules: once EMPTY IS YOU is active, adjacent vacant
+ // squares really can push text, so an unanchored sentence drifts away.
+ words('TEXT ON ROCK IS STILL',8,2);
+ for(const [y,x1,x2] of [[1,1,3],[4,2,5],[2,8,13]])for(let x=x1;x<=x2;x++)o('rock',x,y);
 });
 
 // v0.4: collision-order puzzles, including EAT, SAFE, PULL, PHANTOM and TELE networks.
@@ -190,6 +194,42 @@ create('37 · 吃掉它，创造终点','EAT × HAS · 连锁结算','组装 EAT
  words('BABA IS YOU',1,1);words('ROCK IS WIN',11,1);
  words('WALL IS STOP',1,2);words('WALL HAS ROCK',8,3);
  words('BABA EAT',2,4);words('WALL',4,6);o('baba',4,7);col('wall',8,0,11);
+});
+
+// v0.5: movement-stage consistency, virtual empty interactions and conflicts.
+create('38 · 不同层也能推动','FLOAT × PUSH','幽灵与岩石不在同一浮层，但 PUSH 依然需要移动。试着推开岩石到旗帜。',({o,words,col})=>{
+ words('GHOST IS YOU',1,1);words('GHOST IS FLOAT',6,1);
+ words('ROCK IS PUSH',1,3);words('FLAG IS WIN',11,3);words('FLAG IS FLOAT',1,5);
+ o('ghost',4,8);o('flag',12,8);col('rock',8,0,11);
+});
+create('39 · 先行动，再变身','MOVE × 变形结算','ROCK 本回合会先按 MOVE 移动一格，然后变成可以获胜的 KEKE。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS MOVE',1,3);words('ROCK IS KEKE',1,5);
+ words('KEKE IS WIN',10,3);
+ o('baba',5,8);o('rock',8,8,1);
+});
+create('40 · 两个操作者','YOU × PUSH','两个角色同向行动，前方角色推开岩石，后方角色跟随；不能一回合移动两格。',({o,words,row})=>{
+ words('BABA AND KEKE IS YOU',1,1);words('ROCK IS PUSH',1,3);words('FLAG IS WIN',11,1);
+ row('wall',0,15,7);row('wall',0,15,9);
+ o('baba',2,8);o('keke',3,8);o('rock',4,8);o('rock',5,8);o('flag',12,8);
+});
+create('41 · 空白也有阻力','EMPTY IS PUSH','EMPTY IS PUSH：一排空格只有在前方存在实体时才允许被推动。沿着有尽头的路线前进。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('EMPTY IS PUSH',1,3);words('FLAG IS WIN',11,1);
+ o('baba',2,8);o('rock',6,8);o('flag',12,8);
+});
+create('42 · 空格替你组句','EMPTY IS YOU','按一次向左：由空格控制推动 WIN 文字，组成 ROCK IS WIN。随后让 BABA 靠近岩石。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('EMPTY IS YOU',1,3);
+ words('ROCK IS',3,6);words('WIN',6,6);
+ words('TEXT ON WALL IS STILL',8,3);
+ for(const [y,x1,x2] of [[1,1,3],[3,1,3],[6,3,4],[3,8,13]])for(let x=x1;x<=x2;x++)o('wall',x,y);
+ o('baba',9,8);o('rock',11,8);
+});
+create('43 · 两条传送带','SHIFT × 重叠','两条同方向的 SHIFT 重叠，一个对象在同一个 SHIFT 阶段只应移动一次。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('BELT IS SHIFT',1,3);words('FLAG IS WIN',11,1);
+ o('baba',6,8);o('belt',6,8,1);o('belt',6,8,1);o('flag',7,8);
+});
+create('44 · 同时推又拉','PUSH × PULL','岩石兼具 PUSH 和 PULL：向右拉住后面的岩石，再向左试试推动一整排。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS PUSH AND PULL',1,3);words('FLAG IS WIN',11,1);
+ o('rock',4,8);o('rock',5,8);o('baba',6,8);o('flag',11,8);
 });
 
 const exported={levels};

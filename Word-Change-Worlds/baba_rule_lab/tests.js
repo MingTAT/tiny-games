@@ -8,8 +8,8 @@ function thing(type,x,y,dir=1){return {type,x,y,dir};}
 function words(string,x,y,dx=1,dy=0){return string.split(' ').map((word,i)=>({type:'text',word,x:x+i*dx,y:y+i*dy}));}
 const obj=(game,type)=>game.objs.filter(o=>o.type===type);
 
-test('37 authored levels initialize and parse their rules',()=>{
- assert.equal(levels.length,37);
+test('44 authored levels initialize and parse their rules',()=>{
+ assert.equal(levels.length,44);
  for(const l of levels){const game=new Game(l);assert(game.rules.some(r=>r.verb==='IS'));game.step(null);}
 });
 test('IS YOU permits movement; undo and redo restore state',()=>{
@@ -426,6 +426,109 @@ test('37 EAT WALL + WALL HAS ROCK + ROCK IS WIN wins',()=>{
  const game=new Game(levels[36]);game.step(0);game.step(0);assert(game.rules.some(r=>r.verb==='EAT'));
  for(let i=0;i<3;i++)game.step(2);for(let i=0;i<4;i++)game.step(1);
  assert(game.won);assert(game.at(8,8).some(o=>o.type==='rock'));
+});
+
+
+// v0.5: movement stages, cross-FLOAT pushing and virtual EMPTY behavior.
+test('cross-FLOAT PUSH displaces a rock even when the controller is FLOAT',()=>{
+ const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('ROCK IS PUSH',0,4),thing('ghost',5,8),thing('rock',6,8)]);
+ game.step(1);assert.equal(obj(game,'ghost')[0].x,6);assert.equal(obj(game,'rock')[0].x,7);
+});
+test('cross-FLOAT STOP alone does not obstruct movement',()=>{
+ const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('WALL IS STOP',0,4),thing('ghost',5,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'ghost')[0].x,6);
+});
+test('cross-FLOAT PUSH chain rolls back together when its end is blocked',()=>{
+ const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('ROCK IS PUSH',0,4),thing('ghost',9,8),thing('rock',10,8),thing('rock',11,8)],12,10);
+ game.step(1);assert.equal(obj(game,'ghost')[0].x,9);assert.deepEqual(obj(game,'rock').map(o=>o.x),[10,11]);
+});
+test('EMPTY IS PUSH blocks if the ray reaches the map boundary with no object',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PUSH',0,2),thing('baba',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('EMPTY IS PUSH yields if the ray terminates in a non-empty tile',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PUSH',0,2),thing('baba',6,8),thing('rock',10,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);
+});
+test('EMPTY IS PUSH yields at a physical STOP object (the EMPTY disappears)',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PUSH',0,2),...words('WALL IS STOP',0,4),thing('baba',6,8),thing('wall',10,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);
+});
+test('EMPTY IS PUSH wins priority over EMPTY IS STOP when a push is possible',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PUSH',0,2),...words('EMPTY IS STOP',0,4),thing('baba',6,8),thing('rock',10,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);
+});
+test('EMPTY IS NOT PUSH removes virtual empty push obstruction',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PUSH',0,2),...words('EMPTY IS NOT PUSH',0,4),thing('baba',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,7);
+});
+test('EMPTY IS PULL is a solid empty cell without PUSH',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('EMPTY IS PULL',0,2),thing('baba',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('EMPTY IS YOU pushes loose word tile to form new sentence',()=>{
+ const game=new Game(levels[41]);
+ assert(!game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+ game.step(3);assert(game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+ assert.equal(game.objs.find(o=>o.word==='WIN').x,5);
+});
+test('conditional TEXT ON WALL IS STILL does not accidentally imply WALL IS STILL',()=>{
+ const game=g([...words('TEXT ON WALL IS STILL',0,0),thing('wall',7,7)]);
+ assert(game.rules.some(r=>r.subject==='TEXT'&&r.cond?.type==='ON'));
+ assert(!game.rules.some(r=>r.subject==='WALL'&&r.verb==='IS'&&r.target==='STILL'));
+});
+test('NOT conditional noun does not bootstrap an unconditional noun sentence',()=>{
+ const game=g([...words('BABA NEAR ROCK IS WIN',0,0),thing('rock',7,8)]);
+ assert(game.rules.some(r=>r.subject==='BABA'&&r.cond?.type==='NEAR'));
+ assert(!game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+});
+test('two independent YOU actors move one grid cell each in a single input',()=>{
+ const game=g([...words('BABA AND KEKE IS YOU',0,0),thing('baba',4,8),thing('keke',5,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,5);assert.equal(obj(game,'keke')[0].x,6);
+});
+test('two stacked YOU actors are each moved exactly once',()=>{
+ const game=g([...words('BABA AND KEKE IS YOU',0,0),thing('baba',5,8),thing('keke',5,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'keke')[0].x,6);
+});
+test('simultaneous YOU controller that is PUSH will not be pushed twice',()=>{
+ const game=g([...words('BABA AND KEKE IS YOU',0,0),...words('KEKE IS PUSH',0,2),thing('baba',5,8),thing('keke',6,8)]);
+ game.step(1);assert.equal(obj(game,'keke')[0].x,7);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('MOVE movement occurs before NOUN transformation in the same turn',()=>{
+ const game=g([...words('ROCK IS MOVE',0,0),...words('ROCK IS KEKE',0,2),thing('rock',5,8,1)]);
+ game.step(null);assert.equal(obj(game,'keke')[0].x,6);
+});
+test('two SHIFT belts on one tile apply one move in their stage',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),thing('belt',5,8,1),thing('belt',5,8,1),thing('baba',5,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('two different SHIFT belts cannot independently move same unit again',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),thing('belt',5,8,1),thing('belt',5,8,3),thing('baba',5,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('MAKE after MOVE creates objects at the post-movement position',()=>{
+ const game=g([...words('ROCK IS MOVE',0,0),...words('ROCK MAKE FLAG',0,2),thing('rock',5,8,1)]);
+ game.step(null);assert.equal(obj(game,'rock')[0].x,6);assert.equal(obj(game,'flag')[0].x,6);
+});
+test('undo and redo preserve virtual EMPTY interactions and completed rule',()=>{
+ const game=new Game(levels[41]);game.step(3);
+ assert(game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+ game.undo();assert(!game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+ game.redo();assert(game.rules.some(r=>r.subject==='ROCK'&&r.target==='WIN'));
+});
+test('38–44 have tested gameplay solutions instead of decorative win targets',()=>{
+ const solution={38:Array(8).fill(1),39:[null,1,1,1,1],40:Array(9).fill(1),41:Array(10).fill(1),42:[3,1,1,1],43:[null],44:Array(5).fill(1)};
+ for(const [num,dirs] of Object.entries(solution)){
+   const game=new Game(levels[Number(num)-1]);
+   for(const dir of dirs)game.step(dir);
+   assert(game.won,`level ${num} did not win`);
+ }
+});
+test('38–44 can be restarted without retaining transformations or completion',()=>{
+ for(const l of levels.slice(37)){
+  const game=new Game(l);const original=game.snapshot();game.step(1);game.restart();
+  assert.deepEqual(game.snapshot(),original);
+ }
 });
 
 console.log(`\n${passed} tests passed`);

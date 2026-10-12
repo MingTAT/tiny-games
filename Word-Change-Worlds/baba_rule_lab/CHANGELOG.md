@@ -1,18 +1,24 @@
 # Change Log
 
+## v0.5 · 2026-10-12
+
+- 修复跨 FLOAT 层的 PUSH 推动、阻挡链与失败回滚；不同 FLOAT 层的普通 STOP 不产生实体阻挡。
+- 实现 EMPTY IS PUSH 的连续空格推送判定，并扩展 EMPTY IS PULL、EMPTY IS YOU 推动文字/物体的基础行为；保持 EMPTY 虚拟、不生成永久 EMPTY 实体。
+- 将 MOVE/SHIFT 运动结算调整为在名词变形与 MAKE 之前；变形后处理 TELE 与重叠效果。
+- 同一 SHIFT 阶段避免对一个对象重复移动；保持多个 YOU 同向运动时每个实体只移动一次。
+- 修复规则解析器在 ON/NEAR/FACING/WITHOUT 条件句中间启动子句导致无条件规则泄漏的问题。
+- 调整第 31 关使完整 EMPTY YOU 动态玩法生效后仍可按原解法完成。
+- 新增 38–44 关：跨层 PUSH、先 MOVE 再变形、双 YOU、EMPTY PUSH、EMPTY YOU 拼词、重叠 SHIFT、PUSH+PULL。
+- 自动化测试由 87 增至 109，并为 38–44 每一关验证可通关操作序列。
+
 ## v0.4 · 2026-10-11
 
-- 新增 EAT 动词（移动碰撞与重叠结算），支持 SAFE 防护、HAS 后续生成，以及因其他 STOP 对象仍在时的事务回滚。
-- 修复 PULL 作为实体阻挡、连续拖拽和跨 FLOAT 层的基础行为。
-- 新增 PHANTOM 绕过 STOP / PUSH、但仍触发重叠效果。
-- 修复 TELE 不同对象类型相互错误串线的问题。保留确定性轮询目的地（与原作 3+ TELE 随机性不完全一致）。
-- 新增关卡 32–37：EAT WALL、TEXT PULL + STILL、PHANTOM、SAFE+NOT+EAT、独立 TELE 网络、EAT + HAS + WIN。
-- 更新界面规则列表，支持 EAT；保持单文件和 GitHub Pages 两种交付形式。
-- 扩展至 87 项 Node 自动测试，包括 6 关逐步通关验证、68 项旧测试及新增引擎行为测试。
+- EAT 动词（碰撞及重叠）、SAFE 和 HAS 联动、PULL 连锁拖拽、PHANTOM、分类 TELE 修复。
+- 原创关卡 32–37，总计 37 关，87 项测试。
 
 ## v0.3 · 2026-10-10
 
-- GROUP、字母拼词和 EMPTY 部分机制；31 个关卡和 68 项自动测试。
+- GROUP、字母拼词、EMPTY 部分机制；31 个关卡和 68 项自动测试。
 
 ## v0.2
 
