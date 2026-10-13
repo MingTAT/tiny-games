@@ -223,13 +223,45 @@ create('42 · 空格替你组句','EMPTY IS YOU','按一次向左：由空格控
  for(const [y,x1,x2] of [[1,1,3],[3,1,3],[6,3,4],[3,8,13]])for(let x=x1;x<=x2;x++)o('wall',x,y);
  o('baba',9,8);o('rock',11,8);
 });
-create('43 · 两条传送带','SHIFT × 重叠','两条同方向的 SHIFT 重叠，一个对象在同一个 SHIFT 阶段只应移动一次。',({o,words})=>{
+create('43 · 两条传送带','SHIFT × 重叠','两个 SHIFT 叠加会在同一个回合推进两格，而不是只移动一次。',({o,words})=>{
  words('BABA IS YOU',1,1);words('BELT IS SHIFT',1,3);words('FLAG IS WIN',11,1);
- o('baba',6,8);o('belt',6,8,1);o('belt',6,8,1);o('flag',7,8);
+ o('baba',6,8);o('belt',6,8,1);o('belt',6,8,1);o('flag',8,8);
 });
 create('44 · 同时推又拉','PUSH × PULL','岩石兼具 PUSH 和 PULL：向右拉住后面的岩石，再向左试试推动一整排。',({o,words})=>{
  words('BABA IS YOU',1,1);words('ROCK IS PUSH AND PULL',1,3);words('FLAG IS WIN',11,1);
  o('rock',4,8);o('rock',5,8);o('baba',6,8);o('flag',11,8);
+});
+
+// v0.6: FLOAT solidity, conditional SWAP, cross-layer PULL, combined movement.
+create('45 · 靠近墙才交换','NEAR × SWAP','靠近墙时你拥有 SWAP；穿过墙后这个属性自然失效，才能碰到旗帜。',({o,words,col})=>{
+ words('BABA IS YOU',1,1);words('BABA NEAR WALL IS SWAP',1,3);
+ words('WALL IS STOP',1,5);words('FLAG IS WIN',11,1);
+ col('wall',8,0,11);o('baba',4,8);o('flag',13,8);
+});
+create('46 · 漂浮也会撞墙','FLOAT × STOP','FLOAT 不让你穿透 STOP；先从下方推开 STOP 文字，再穿墙去找同样 FLOAT 的旗帜。',({o,words,col})=>{
+ words('GHOST IS YOU',1,1);words('GHOST IS FLOAT',6,1);
+ words('FLAG IS WIN',11,3);words('FLAG IS FLOAT',10,5);
+ words('WALL IS STOP',3,6);col('wall',8,0,11);
+ o('ghost',5,7);o('flag',13,6);
+});
+create('47 · 隔着高度也能拖','FLOAT × PULL','即使岩石不在你的 FLOAT 层，背后的 PULL 岩石仍会被拖过来。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('BABA IS FLOAT',1,3);
+ words('ROCK IS PULL',1,5);words('FLAG IS WIN',11,1);words('FLAG IS FLOAT',11,3);
+ o('rock',4,8);o('baba',5,8);o('flag',12,8);
+});
+create('48 · 交换优先于推开','PUSH × SWAP','岩石同时拥有 PUSH 和 SWAP。撞上岩石时交换位置，而不是把它推走。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('ROCK IS PUSH AND SWAP',1,3);
+ words('FLAG IS WIN',11,1);o('baba',6,8);o('rock',7,8);o('flag',9,8);
+});
+create('49 · 自动拼成终点','MOVE × PUSH × 同步','两只 KEKE 一起向左移动；它们推动 WIN 文字组成 FLAG IS WIN。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('KEKE IS PUSH AND MOVE',1,3);
+ words('FLAG IS',6,6);words('WIN',9,6);
+ o('keke',10,6,3);o('keke',11,6,3);
+ o('baba',13,8);o('flag',13,8);
+});
+create('50 · 三层传送带','SHIFT × 叠加','三条叠放的 SHIFT 产生三个移动步骤；等待一回合，刚好到达终点。',({o,words})=>{
+ words('BABA IS YOU',1,1);words('BELT IS SHIFT',1,3);words('FLAG IS WIN',11,1);
+ o('baba',4,8);o('belt',4,8,1);o('belt',4,8,1);o('belt',4,8,1);o('flag',7,8);
 });
 
 const exported={levels};

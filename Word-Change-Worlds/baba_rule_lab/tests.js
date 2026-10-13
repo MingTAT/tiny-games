@@ -8,8 +8,8 @@ function thing(type,x,y,dir=1){return {type,x,y,dir};}
 function words(string,x,y,dx=1,dy=0){return string.split(' ').map((word,i)=>({type:'text',word,x:x+i*dx,y:y+i*dy}));}
 const obj=(game,type)=>game.objs.filter(o=>o.type===type);
 
-test('44 authored levels initialize and parse their rules',()=>{
- assert.equal(levels.length,44);
+test('50 authored levels initialize and parse their rules',()=>{
+ assert.equal(levels.length,50);
  for(const l of levels){const game=new Game(l);assert(game.rules.some(r=>r.verb==='IS'));game.step(null);}
 });
 test('IS YOU permits movement; undo and redo restore state',()=>{
@@ -71,9 +71,9 @@ test('DEFEAT deletes YOU, but not the skull',()=>{
  const game=g([...words('BABA IS YOU',0,0),...words('SKULL IS DEFEAT',0,2),thing('baba',4,5),thing('skull',5,5)]);
  game.step(1);assert.equal(obj(game,'baba').length,0);assert.equal(obj(game,'skull').length,1);
 });
-test('FLOAT avoids ordinary STOP and ordinary WIN',()=>{
+test('FLOAT does not bypass STOP solidity',()=>{
  const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('WALL IS STOP',0,4),thing('ghost',4,7),thing('wall',5,7)]);
- game.step(1);assert.equal(obj(game,'ghost')[0].x,5);
+ game.step(1);assert.equal(obj(game,'ghost')[0].x,4);
 });
 test('OPEN and SHUT annihilate',()=>{
  const game=g([...words('BABA IS YOU',0,0),...words('BABA IS OPEN',0,2),...words('DOOR IS SHUT',0,4),thing('baba',3,7),thing('door',4,7)]);
@@ -434,9 +434,9 @@ test('cross-FLOAT PUSH displaces a rock even when the controller is FLOAT',()=>{
  const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('ROCK IS PUSH',0,4),thing('ghost',5,8),thing('rock',6,8)]);
  game.step(1);assert.equal(obj(game,'ghost')[0].x,6);assert.equal(obj(game,'rock')[0].x,7);
 });
-test('cross-FLOAT STOP alone does not obstruct movement',()=>{
+test('cross-FLOAT STOP blocks ordinary movement',()=>{
  const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('WALL IS STOP',0,4),thing('ghost',5,8),thing('wall',6,8)]);
- game.step(1);assert.equal(obj(game,'ghost')[0].x,6);
+ game.step(1);assert.equal(obj(game,'ghost')[0].x,5);
 });
 test('cross-FLOAT PUSH chain rolls back together when its end is blocked',()=>{
  const game=g([...words('GHOST IS YOU',0,0),...words('GHOST IS FLOAT',0,2),...words('ROCK IS PUSH',0,4),thing('ghost',9,8),thing('rock',10,8),thing('rock',11,8)],12,10);
@@ -498,13 +498,13 @@ test('MOVE movement occurs before NOUN transformation in the same turn',()=>{
  const game=g([...words('ROCK IS MOVE',0,0),...words('ROCK IS KEKE',0,2),thing('rock',5,8,1)]);
  game.step(null);assert.equal(obj(game,'keke')[0].x,6);
 });
-test('two SHIFT belts on one tile apply one move in their stage',()=>{
+test('two stacked SHIFT belts advance two cells in one movement stage',()=>{
  const game=g([...words('BELT IS SHIFT',0,0),thing('belt',5,8,1),thing('belt',5,8,1),thing('baba',5,8)]);
- game.step(null);assert.equal(obj(game,'baba')[0].x,6);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,7);
 });
-test('two different SHIFT belts cannot independently move same unit again',()=>{
+test('opposing SHIFT belts stack steps using first belt direction',()=>{
  const game=g([...words('BELT IS SHIFT',0,0),thing('belt',5,8,1),thing('belt',5,8,3),thing('baba',5,8)]);
- game.step(null);assert.equal(obj(game,'baba')[0].x,6);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,7);
 });
 test('MAKE after MOVE creates objects at the post-movement position',()=>{
  const game=g([...words('ROCK IS MOVE',0,0),...words('ROCK MAKE FLAG',0,2),thing('rock',5,8,1)]);
@@ -529,6 +529,121 @@ test('38–44 can be restarted without retaining transformations or completion',
   const game=new Game(l);const original=game.snapshot();game.step(1);game.restart();
   assert.deepEqual(game.snapshot(),original);
  }
+});
+
+// v0.6: differential rules verified against public descriptions of Baba Is You.
+test('FLOAT does not weaken STOP collision at all',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('WALL IS STOP',0,4),thing('baba',5,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,5);
+});
+test('FLOAT cannot make a PULL object passable',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('ROCK IS PULL',0,4),thing('baba',5,8),thing('rock',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,5);
+});
+test('FLOAT does not prevent pulling an adjacent object',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('ROCK IS PULL',0,4),thing('rock',4,8),thing('baba',5,8)]);
+ game.step(1);assert.equal(obj(game,'rock')[0].x,5);
+});
+test('FLOAT does not disable SWAP collision',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('ROCK IS SWAP',0,4),thing('baba',5,8),thing('rock',6,8)]);
+ game.step(1);assert.equal(obj(game,'rock')[0].x,5);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('FLOAT does separate same-tile WIN overlap',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('FLAG IS WIN',0,4),thing('baba',5,8),thing('flag',6,8)]);
+ game.step(1);assert.equal(game.won,false);
+});
+test('FLOAT does separate same-tile DEFEAT overlap',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('BABA IS FLOAT',0,2),...words('SKULL IS DEFEAT',0,4),thing('baba',5,8),thing('skull',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba').length,1);
+});
+test('three identical SHIFT sources apply three single-cell waves',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),thing('belt',4,8),thing('belt',4,8),thing('belt',4,8),thing('baba',4,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,7);
+});
+test('second SHIFT wave checks STOP again and cannot cross it',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),...words('WALL IS STOP',0,2),thing('belt',4,8),thing('belt',4,8),thing('baba',4,8),thing('wall',6,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,5);
+});
+test('conflicting SHIFT directions have a deterministic first-source direction',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),thing('belt',4,8,3),thing('belt',4,8,1),thing('baba',4,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,2);
+});
+test('SHIFT with stacked sources moves a PUSH object cell-by-cell',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),...words('ROCK IS PUSH',0,2),thing('belt',4,8),thing('belt',4,8),thing('baba',4,8),thing('rock',5,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'rock')[0].x,7);
+});
+test('MOVE queue does not run a PUSH-MOVE object twice in one stage',()=>{
+ const game=g([...words('KEKE IS MOVE AND PUSH',0,0),thing('keke',5,8,1),thing('keke',6,8,1)]);
+ game.step(null);assert.deepEqual(obj(game,'keke').map(o=>o.x),[6,7]);
+});
+test('MOVE unit reverses direction when blocked by STOP',()=>{
+ const game=g([...words('KEKE IS MOVE',0,0),...words('WALL IS STOP',0,2),thing('keke',5,8,1),thing('wall',6,8)]);
+ game.step(null);assert.equal(obj(game,'keke')[0].x,5);assert.equal(obj(game,'keke')[0].dir,3);
+});
+test('YOU movement and MOVE movement remain separate stages',()=>{
+ const game=g([...words('BABA IS YOU AND MOVE',0,0),thing('baba',4,8,1)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);
+});
+test('PUSH and SWAP on target: exchange takes precedence over push',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('ROCK IS PUSH AND SWAP',0,2),thing('baba',5,8),thing('rock',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'rock')[0].x,5);
+});
+test('STOP and SWAP on target: exchange ignores solidity',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('ROCK IS STOP AND SWAP',0,2),thing('baba',5,8),thing('rock',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'rock')[0].x,5);
+});
+test('SWAP used by source ignores STOP in another FLOAT layer',()=>{
+ const game=g([...words('BABA IS YOU AND SWAP',0,0),...words('BABA IS FLOAT',0,2),...words('WALL IS STOP',0,4),thing('baba',5,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'wall')[0].x,5);
+});
+test('front SWAP controller moves STOP obstacle and blocks rear controller',()=>{
+ const game=g([...words('BABA AND KEKE IS YOU',0,0),...words('KEKE IS SWAP',0,2),...words('WALL IS STOP',0,4),thing('baba',4,8),thing('keke',5,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,4);assert.equal(obj(game,'keke')[0].x,6);assert.equal(obj(game,'wall')[0].x,5);
+});
+test('PULL follows a leader after the leader SWAPs its target',()=>{
+ const game=g([...words('BABA IS YOU AND SWAP',0,0),...words('ROCK IS PULL',0,2),thing('rock',4,8),thing('baba',5,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,6);assert.equal(obj(game,'rock')[0].x,5);
+});
+test('blocked move restores earlier SWAP when second obstacle is STOP',()=>{
+ const game=g([...words('BABA IS YOU',0,0),...words('ROCK IS SWAP',0,2),...words('WALL IS STOP',0,4),thing('baba',5,8),thing('rock',6,8),thing('wall',6,8)]);
+ game.step(1);assert.equal(obj(game,'baba')[0].x,5);assert.equal(obj(game,'rock')[0].x,6);assert.equal(obj(game,'wall')[0].x,6);
+});
+test('undo and redo preserve multi-step SHIFT results',()=>{
+ const game=g([...words('BELT IS SHIFT',0,0),thing('belt',4,8),thing('belt',4,8),thing('baba',4,8)]);
+ game.step(null);assert.equal(obj(game,'baba')[0].x,6);
+ game.undo();assert.equal(obj(game,'baba')[0].x,4);
+ game.redo();assert.equal(obj(game,'baba')[0].x,6);
+});
+test('undo and redo preserve SWAP result and rules',()=>{
+ const game=new Game(levels[47]);game.step(1);assert.equal(obj(game,'rock')[0].x,6);
+ game.undo();assert.equal(obj(game,'rock')[0].x,7);
+ game.redo();assert.equal(obj(game,'rock')[0].x,6);
+});
+test('45–50 solve with actual action sequences',()=>{
+ const paths={45:Array(9).fill(1),46:[0,...Array(8).fill(1)],47:Array(7).fill(1),48:[1,1,1],49:[null],50:[null]};
+ for(const [num,path] of Object.entries(paths)){
+   const game=new Game(levels[Number(num)-1]);
+   for(const dir of path)game.step(dir);
+   assert(game.won,`Level ${num} is not solvable on its intended route`);
+ }
+});
+test('45–50 reset to exact original state after playing',()=>{
+ for(const level of levels.slice(44)){
+   const game=new Game(level),initial=game.snapshot();game.step(1);game.restart();
+   assert.deepEqual(game.snapshot(),initial);
+ }
+});
+test('level 46 requires dismantling STOP rather than crossing it by FLOAT',()=>{
+ const game=new Game(levels[45]);
+ game.step(1);game.step(1);game.step(1);assert.equal(obj(game,'ghost')[0].x,7);
+ game.restart();game.step(0);
+ assert(!game.has(obj(game,'wall')[0],'STOP'));
+});
+test('level 49 MOVE forms a live WIN rule from movable text',()=>{
+ const game=new Game(levels[48]);
+ assert(!game.rules.some(r=>r.subject==='FLAG'&&r.target==='WIN'));
+ game.step(null);assert(game.rules.some(r=>r.subject==='FLAG'&&r.target==='WIN'));
+ assert(game.won);
 });
 
 console.log(`\n${passed} tests passed`);

@@ -267,10 +267,10 @@
       const source={x:obj.x,y:obj.y};
       const rollback=()=>{this.restore(backup);movedIds.clear();for(const mid of movedBackup)movedIds.add(mid);chain.delete(id);return false;};
       chain.add(id);
-      // PUSH ignores FLOAT layers, but solid STOP / PULL interactions and
-      // collisions otherwise require matching layers.
+      // Solidity/movement collision (PUSH, STOP, PULL and SWAP) ignores
+      // FLOAT differences; overlapping interactions such as EAT do not.
       const occupants=this.at(nx,ny).filter(o=>o.id!==id &&
-        (this.sameFloat(obj,o) || this.has(o,'PUSH')));
+        (this.sameFloat(obj,o) || ['PUSH','STOP','PULL','SWAP'].some(p=>this.has(o,p)) || this.has(obj,'SWAP')));
       for(const target of occupants) {
         if(!this.get(target.id))continue;
         // A moving EAT unit may consume STOP/PUSH targets on collision, but
@@ -279,7 +279,8 @@
           this.destroy(new Set([target.id]));
           continue;
         }
-        if(!this.sameFloat(obj,target) && !this.has(target,'PUSH')) continue;
+        if(!this.sameFloat(obj,target) &&
+          !['PUSH','STOP','PULL','SWAP'].some(p=>this.has(target,p)) && !this.has(obj,'SWAP'))continue;
         const unlock=this.sameFloat(obj,target) &&
           ((this.has(obj,'OPEN')&&this.has(target,'SHUT'))||(this.has(obj,'SHUT')&&this.has(target,'OPEN')));
         if(unlock && this.has(target,'STOP')){
@@ -288,11 +289,11 @@
         // SWAP bypasses STOP/PUSH; objects moving into or out of SWAP switch places.
         if(this.has(obj,'PHANTOM')) {
           continue; // bypass obstacles; overlap effects still resolve
-        } else if(this.sameFloat(obj,target) && (this.has(obj,'SWAP')||this.has(target,'SWAP'))) {
+        } else if(this.has(obj,'SWAP')||this.has(target,'SWAP')) {
           target.x=source.x;target.y=source.y;movedIds.add(target.id);
         } else if(this.has(target,'PUSH')) {
           if(!this.attempt(target.id,dx,dy,chain,false,movedIds))return rollback();
-        } else if(this.sameFloat(obj,target) && (this.has(target,'STOP') || this.has(target,'PULL'))) {
+        } else if(this.has(target,'STOP') || this.has(target,'PULL')) {
           // A non-pushable WEAK STOP may be entered; overlap reaction removes it.
           if(this.has(target,'WEAK')&&this.sameFloat(obj,target))continue;
           if(this.has(obj,'WEAK')&&!this.has(obj,'SAFE')){
@@ -304,7 +305,10 @@
       const moved=this.get(id);
       if(moved){moved.x=nx;moved.y=ny;moved.dir=DIRS.findIndex(d=>d[0]===dx&&d[1]===dy);movedIds.add(id);}
       if(allowPull) {
-        const trailing=this.at(source.x-dx,source.y-dy).filter(o=>o.id!==id&&this.has(o,'PULL'));
+        // PULL ignores FLOAT differences just like PUSH/STOP/SWAP;
+        // FLOAT only separates same-cell overlap reactions.
+        const trailing=this.at(source.x-dx,source.y-dy).filter(o=>
+          o.id!==id && this.has(o,'PULL'));
         // The pulled object can pull one behind it, yielding arbitrary chains.
         // A blocked follower is left behind; movement of the leader commits.
         for(const pulled of trailing) if(!movedIds.has(pulled.id))
@@ -363,24 +367,59 @@
       if(spawned.length)this.refresh();
     }
     autonomousMovement() {
-      const movers=this.objs.filter(o=>this.has(o,'MOVE')).map(o=>o.id);
-      for(const id of movers) {
-        const o=this.get(id);if(!o)continue;
-        const [dx,dy]=DIRS[o.dir];
-        if(!this.attempt(id,dx,dy)) {const existing=this.get(id);if(existing)existing.dir=(existing.dir+2)%4;}
+      // All MOVE objects participate in a single movement stage. A PUSH or
+      // SWAP reaction performed for one mover must not grant the displaced
+      // MOVE object a second autonomous move during this same stage.
+      const movers=this.objs.filter(o=>this.has(o,'MOVE')).map(o=>({id:o.id,dir:o.dir}));
+      const movedIds=new Set();
+      for(const {id,dir} of movers) {
+        const o=this.get(id);
+        if(!o || movedIds.has(id))continue;
+        const [dx,dy]=DIRS[dir];
+        if(!this.attempt(id,dx,dy,new Set(),true,movedIds)) {
+          const existing=this.get(id);if(existing)existing.dir=(dir+2)%4;
+        }
       }
       this.refresh();
-      const shiftTiles=this.objs.filter(o=>this.has(o,'SHIFT'));
-      const shifts=[];
-      for(const tile of shiftTiles) for(const obj of this.at(tile.x,tile.y)) if(obj.id!==tile.id&&this.sameFloat(tile,obj)) shifts.push({id:obj.id,dir:tile.dir});
-      // A unit can be shifted only once within a SHIFT movement stage.
-      // This also prevents an object receiving two overlapping belt directions
-      // from being transported two cells in the same stage.
-      const shiftedIds=new Set();
-      for(const s of shifts) {const o=this.get(s.id);if(o&&!shiftedIds.has(s.id)){
-        const [dx,dy]=DIRS[s.dir];this.attempt(s.id,dx,dy,new Set(),true,shiftedIds);
-      }}
+      this.shiftMovement();
       this.refresh();
+    }
+    shiftMovement() {
+      // Real SHIFT sources stack. An object standing on two same-layer SHIFT
+      // sources can take two steps during the SHIFT stage, not just one.
+      // Build the source list at the start of the stage so moving a SHIFT tile
+      // does not recursively create unbounded new movement tickets.
+      const tickets=new Map();
+      for(const tile of [...this.objs]) {
+        if(!this.has(tile,'SHIFT'))continue;
+        for(const obj of this.at(tile.x,tile.y)) {
+          if(obj.id===tile.id || !this.sameFloat(tile,obj))continue;
+          if(!tickets.has(obj.id))tickets.set(obj.id,{id:obj.id,dir:tile.dir,count:0});
+          tickets.get(obj.id).count++;
+        }
+      }
+      // SHIFT stacks are resolved in successive one-cell waves, not as a
+      // single long teleport. The first SHIFT source establishes direction;
+      // later sources on the same cell increment the distance. This does not
+      // yet reproduce every exotic conflicting-direction priority of the game.
+      const queued=[...tickets.values()];
+      const maxSteps=queued.reduce((n,t)=>Math.max(n,t.count),0);
+      for(let wave=0;wave<maxSteps;wave++) {
+        const movedIds=new Set();
+        const active=queued.filter(t=>t.count>wave && this.get(t.id));
+        // Front-most mover first for same-direction stacks, just as YOU
+        // controller input avoids repeatedly pushing the same unit.
+        active.sort((a,b)=>{
+          if(a.dir!==b.dir)return a.id-b.id;
+          const A=this.get(a.id),B=this.get(b.id),d=DIRS[a.dir];
+          return (d[0]*(B.x-A.x)+d[1]*(B.y-A.y)) || a.id-b.id;
+        });
+        for(const t of active) {
+          if(movedIds.has(t.id) || !this.get(t.id))continue;
+          const [dx,dy]=DIRS[t.dir];
+          this.attempt(t.id,dx,dy,new Set(),true,movedIds);
+        }
+      }
     }
     // Transport is resolved after transformations: a freshly transformed
     // portal can apply in this turn, while a transformed-away portal cannot.
