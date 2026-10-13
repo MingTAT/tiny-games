@@ -1,0 +1,254 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const core_1 = require("./core");
+const levels_1 = require("./levels");
+const canvas = document.querySelector('#world');
+const ctx = canvas.getContext('2d');
+const shell = document.querySelector('#game-area');
+const rulesEl = document.querySelector('#rules');
+const turnEl = document.querySelector('#turn');
+const statusEl = document.querySelector('#status');
+const titleEl = document.querySelector('#level-title');
+const levelEl = document.querySelector('#levels');
+const hintEl = document.querySelector('#hint');
+const traceEl = document.querySelector('#trace');
+let level = 0;
+let state = (0, core_1.clone)(levels_1.puzzles[0].state);
+let past = [];
+let future = [];
+let lastEvents = [];
+const C = { background: '#101d28', board: '#172937', floor: '#203746', stroke: '#334b57', word: '#f1e0ae', wordBorder: '#ccac64', ink: '#293041', baba: '#f1f0dc', keke: '#d9b2ef', rock: '#aaa4a0', wall: '#65858f', flag: '#f3c16c', water: '#4ba4c3', skull: '#e0ded8', key: '#f6d47f', door: '#ba8b68' };
+function choose(i) { level = i; state = (0, core_1.clone)(levels_1.puzzles[i].state); past = []; future = []; lastEvents = []; hintEl.textContent = ''; draw(); }
+function apply(dir) {
+    if (state.status === 'won')
+        return;
+    past.push((0, core_1.clone)(state));
+    if (past.length > 500)
+        past.shift();
+    future = [];
+    const result = (0, core_1.step)(state, dir);
+    state = result.state;
+    lastEvents = result.events.filter(e => e.type !== 'reparse').map(e => `${e.phase} · ${e.type} ${e.detail || ''}`).slice(-7);
+    draw();
+}
+function undo() { if (!past.length)
+    return; future.push((0, core_1.clone)(state)); state = past.pop(); lastEvents = ['undo']; draw(); }
+function redo() { if (!future.length)
+    return; past.push((0, core_1.clone)(state)); state = future.pop(); lastEvents = ['redo']; draw(); }
+function restart() { choose(level); }
+function roundRect(x, y, w, h, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+}
+function tileShape(e, x, y, size) {
+    const cx = x + size / 2, cy = y + size / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    const col = C[e.kind.toLowerCase()] || '#b8d1a3';
+    ctx.fillStyle = col;
+    ctx.strokeStyle = '#182936';
+    ctx.lineWidth = 2;
+    const t = size * .30;
+    switch (e.kind) {
+        case 'BABA':
+        case 'KEKE':
+            ctx.beginPath();
+            ctx.ellipse(0, 2, t * .8, t * .77, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            for (const dx of [-t * .45, t * .45]) {
+                ctx.beginPath();
+                ctx.ellipse(dx, -t * .75, t * .29, t * .52, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#26353b';
+            ctx.fillRect(-t * .34, -2, 3, 4);
+            ctx.fillRect(t * .24, -2, 3, 4);
+            break;
+        case 'FLAG':
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#f8e8c1';
+            ctx.beginPath();
+            ctx.moveTo(-t * .4, t);
+            ctx.lineTo(-t * .4, -t);
+            ctx.stroke();
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(-t * .37, -t);
+            ctx.lineTo(t * .95, -t * .6);
+            ctx.lineTo(-t * .37, -t * .05);
+            ctx.closePath();
+            ctx.fill();
+            break;
+        case 'WALL':
+            roundRect(-t, -t, t * 2, t * 2, 3, col, '#385a65');
+            ctx.strokeStyle = '#365866';
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(-t, 0);
+            ctx.lineTo(t, 0);
+            ctx.moveTo(0, -t);
+            ctx.lineTo(0, 0);
+            ctx.moveTo(-t * .55, 0);
+            ctx.lineTo(-t * .55, t);
+            ctx.stroke();
+            break;
+        case 'ROCK':
+            ctx.beginPath();
+            ctx.moveTo(-t, -t * .1);
+            ctx.lineTo(-t * .42, -t * .88);
+            ctx.lineTo(t * .50, -t * .7);
+            ctx.lineTo(t, t * .23);
+            ctx.lineTo(t * .25, t * .83);
+            ctx.lineTo(-t * .74, t * .68);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            break;
+        case 'WATER':
+            ctx.beginPath();
+            ctx.ellipse(0, 4, t, t * .65, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            break;
+        default:
+            ctx.beginPath();
+            ctx.arc(0, 0, t, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#182936';
+            ctx.font = `bold ${Math.floor(size * .25)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(e.kind.slice(0, 1), 0, 0);
+    }
+    ctx.restore();
+}
+function render() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = C.background;
+    ctx.fillRect(0, 0, w, h);
+    const size = Math.min((w - 30) / state.width, (h - 26) / state.height);
+    const ox = (w - size * state.width) / 2, oy = (h - size * state.height) / 2;
+    roundRect(ox - 7, oy - 7, state.width * size + 14, state.height * size + 14, 13, C.board);
+    for (let y = 0; y < state.height; y++)
+        for (let x = 0; x < state.width; x++) {
+            roundRect(ox + x * size + 1.3, oy + y * size + 1.3, size - 2.6, size - 2.6, Math.max(2, size * .1), C.floor);
+        }
+    const rs = (0, core_1.parse)(state);
+    const used = new Set(rs.flatMap(r => r.wordIds));
+    for (const e of state.entities.filter(e => e.kind !== 'TEXT')) {
+        const x = ox + e.x * size, y = oy + e.y * size;
+        if (used.has(e.id)) {
+            roundRect(x + size * .08, y + size * .08, size * .84, size * .84, Math.max(4, size * .14), '#b58a4e', '#f1ce81');
+        }
+        tileShape(e, x, y, size);
+    }
+    for (const e of state.entities.filter(e => e.kind === 'TEXT')) {
+        const x = ox + e.x * size, y = oy + e.y * size;
+        const active = used.has(e.id);
+        roundRect(x + size * .065, y + size * .075, size * .87, size * .85, Math.max(4, size * .11), active ? '#f5dc99' : C.word, active ? '#d5a250' : C.wordBorder);
+        const word = e.word || '';
+        const n = word.length;
+        const f = Math.min(size * .25, (size * .77) / (Math.max(2, n) * .62));
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.max(8, Math.floor(f))}px system-ui, sans-serif`;
+        ctx.fillStyle = C.ink;
+        ctx.fillText(word, x + size * .5, y + size * .52, size * .8);
+    }
+    if (state.status === 'won') {
+        roundRect(ox + size * .7, oy + state.height * size * .43, state.width * size - size * 1.4, size * 1.3, 14, 'rgba(11,33,43,.92)', '#b0d8c6');
+        ctx.font = `bold ${Math.min(38, size * .7)}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#bfe7c8';
+        ctx.fillText('规则已改写 · WIN', w / 2, oy + state.height * size * .43 + size * .65);
+    }
+}
+function draw() {
+    titleEl.textContent = levels_1.puzzles[level].title;
+    turnEl.textContent = String(state.turn);
+    statusEl.textContent = state.status === 'won' ? '已通关' : '进行中';
+    const active = (0, core_1.parse)(state);
+    const list = [...new Set(active.map(r => `${r.subjectNegated ? 'NOT ' : ''}${r.subject}${r.conditions.map(c => c.kind === 'LONELY' ? ' LONELY' : ` ${c.kind} ${c.negated ? 'NOT ' : ''}${c.target}`).join('')} ${r.verb} ${r.predicateNegated ? 'NOT ' : ''}${r.predicate}`))];
+    rulesEl.replaceChildren();
+    for (const str of list) {
+        const tag = document.createElement('span');
+        tag.className = 'rule-tag';
+        tag.textContent = str;
+        rulesEl.appendChild(tag);
+    }
+    if (!list.length)
+        rulesEl.textContent = '暂无生效规则';
+    traceEl.textContent = lastEvents.join('\n') || '每次行动的事件轨迹会在这里显示。';
+    levelEl.replaceChildren();
+    levels_1.puzzles.forEach((l, i) => {
+        const b = document.createElement('button');
+        b.className = `level-btn ${i === level ? 'selected' : ''}`;
+        b.textContent = String(i + 1).padStart(2, '0');
+        b.title = l.concept;
+        b.onclick = () => choose(i);
+        levelEl.appendChild(b);
+    });
+    render();
+}
+window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    const map = { arrowup: 'up', w: 'up', arrowdown: 'down', s: 'down', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
+    if (map[key]) {
+        e.preventDefault();
+        apply(map[key]);
+    }
+    else if (key === 'z') {
+        e.preventDefault();
+        undo();
+    }
+    else if (key === 'y') {
+        e.preventDefault();
+        redo();
+    }
+    else if (key === 'r') {
+        e.preventDefault();
+        restart();
+    }
+    else if (key === ' ') {
+        e.preventDefault();
+        apply('wait');
+    }
+});
+document.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', () => {
+    const action = b.dataset.action;
+    if (action === 'undo')
+        undo();
+    else if (action === 'redo')
+        redo();
+    else if (action === 'restart')
+        restart();
+    else if (action === 'wait')
+        apply('wait');
+    else if (action === 'hint') {
+        hintEl.textContent = levels_1.puzzles[level].hint;
+    }
+    else
+        apply(action);
+}));
+let touch = null;
+canvas.addEventListener('touchstart', e => { if (e.touches.length)
+    touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
+canvas.addEventListener('touchend', e => { if (!touch)
+    return; const dx = e.changedTouches[0].clientX - touch.x, dy = e.changedTouches[0].clientY - touch.y; touch = null; if (Math.max(Math.abs(dx), Math.abs(dy)) < 25)
+    return; apply(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); }, { passive: true });
+canvas.width = 960;
+canvas.height = 690;
+draw();
+// Debug hooks used only in smoke tests; no mutation of game internals.
+window.WCW_DEBUG = { getState: () => (0, core_1.clone)(state), getFingerprint: () => (0, core_1.fingerprint)(state), choose, apply, undo, redo };
