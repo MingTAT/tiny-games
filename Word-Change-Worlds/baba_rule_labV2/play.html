@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#11152b"><title>Words Change Worlds — 核心重制版</title><style>:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#11152b;color:#f3efff;font-synthesis:none}*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{background:radial-gradient(ellipse at 15% 0%,#262947 0%,transparent 38%),radial-gradient(ellipse at 98% 97%,#172c41 0%,transparent 35%),#11152b}button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #ffe6a0;outline-offset:3px}.shell{max-width:1320px;padding:26px 32px 22px;margin:auto}.header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #353851;padding-bottom:23px;margin-bottom:20px}.identity{display:flex;align-items:center;gap:15px}.mark{font-weight:900;display:flex;align-items:center;justify-content:center;border:1px solid #8481ae;background:#323351;border-radius:13px;padding:10px;letter-spacing:-2px;color:#fff0b2;min-width:66px}.mark span{color:#aeb9f6;margin:0 4px;font-size:15px}.eyebrow{font-size:10px;letter-spacing:.19em;color:#a6a8c6;font-weight:800}.header h1{font-size:22px;letter-spacing:-.035em;font-weight:780;margin:4px 0 0}.subtle,.toolset button,.icon-button{background:#252a46;color:#e3e2fc;border:1px solid #404664;border-radius:11px;padding:11px 17px}.subtle:hover,.toolset button:hover:not(:disabled),.icon-button:hover{background:#373c5b}.content{display:grid;grid-template-columns:minmax(0,820px) minmax(240px,1fr);gap:27px;align-items:start}.play-area{min-width:0}.level-heading{display:flex;justify-content:space-between;align-items:end;margin:1px 4px 12px}.level-heading h2{margin:5px 0 0;font-size:23px;letter-spacing:-.04em;font-weight:790}.turns{font-size:12px;color:#b7b9cd;display:flex;align-items:center;gap:9px}.turns strong{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:22px;color:#ffe7a0}.board-frame{border:1px solid #484e70;border-radius:18px;padding:10px;background:linear-gradient(150deg,#303652,#222841);box-shadow:0 22px 60px #04061360,0 1px 0 #61678140 inset}.board-frame canvas{display:block;width:100%;aspect-ratio:12/9;touch-action:none;border-radius:11px;background:#1b203a}.control-bar{display:flex;justify-content:space-between;gap:14px;margin-top:15px;align-items:center}.toolset,.dpad{display:flex;gap:8px}.toolset button{min-width:90px;font-size:14px;padding:11px 12px}.toolset button:disabled{opacity:.38;cursor:default}.dpad button{background:#383d5e;border:1px solid #686d93;border-radius:11px;color:#fff0b9;font-size:21px;width:49px;height:44px}.dpad button:hover{background:#51567a}.dpad button:active{transform:translateY(1px);background:#656a92}.info-panel{margin-top:0;background:#1b2038;border:1px solid #363c5a;border-radius:17px;padding:22px;min-height:440px}.side-head h3{font-size:17px;margin:10px 0 17px;display:flex;gap:12px;align-items:center}.live-indicator{background:#84d9c4;width:7px;height:7px;border-radius:99px;box-shadow:0 0 13px #84d9c480}.rules{display:flex;flex-wrap:wrap;gap:9px;min-height:90px;align-content:flex-start}.rule-chip{font-size:12px;color:#604529;background:#fff0c5;border:1px solid #ffedbe;font-weight:900;letter-spacing:.03em;padding:9px 11px;border-radius:7px;box-shadow:0 3px 0 #b2a47d}.empty-rule{font-size:12px;color:#9ca0bb}.rule-explainer{color:#a6abc8;font-size:13px;line-height:1.75;padding:16px 0 21px;border-bottom:1px solid #363c57}.rule-explainer b{color:#f3d59a}.hint-block{padding-top:18px}.hint-head{display:flex;align-items:center;gap:10px;justify-content:space-between}.hint-head .eyebrow{font-size:9px}.hint-head button{white-space:nowrap;background:transparent;color:#e8cb8b;border:1px solid #8b795b;border-radius:7px;padding:6px 8px;font-size:11px}.hint-block p{font-size:13px;line-height:1.75;color:#c2c1d5;margin:13px 0 0}.keyhelp{color:#777f9c;font-size:12px;line-height:1.9;margin-top:27px}footer{font-size:11px;color:#717a97;padding-top:27px;line-height:1.7}.overlay{position:fixed;inset:0;background:#070915c9;backdrop-filter:blur(8px);z-index:30;display:grid;place-items:center;padding:20px}.hidden{display:none!important}.modal{background:#262a45;border:1px solid #606583;border-radius:22px;box-shadow:0 30px 80px #0009;padding:32px;width:min(550px,96vw)}.modal-head{display:flex;justify-content:space-between;gap:20px}.modal h2{font-size:29px;letter-spacing:-.04em;margin:7px 0 23px}.icon-button{height:42px;width:42px;padding:0}.level-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.level-option{position:relative;text-align:left;background:#353a5a;border:1px solid #565c7d;border-radius:11px;color:#fbf8ff;padding:15px;min-height:100px;display:flex;flex-direction:column;justify-content:space-between}.level-option span{font-size:25px;font-weight:900;color:#f8dea3}.level-option small{font-size:11px;color:#c4c3df}.level-option em{position:absolute;right:11px;top:13px;color:#88dac4;font-style:normal}.level-option.selected{border-color:#e2c68e}.level-option:hover{background:#494f73}.select-modal>p{color:#a2a6c4;font-size:12px;margin:19px 0 0}.win-modal{text-align:center;max-width:470px}.win-modal .success-symbol{display:block;font-size:55px;color:#fff0b2;margin:0 0 15px}.win-modal h2{font-size:30px;margin:7px 0 10px}.win-modal p{color:#bec0da;line-height:1.7;font-size:14px}.win-actions{display:flex;justify-content:center;gap:12px;margin-top:25px}.ghost-button,.primary-button{border-radius:10px;padding:12px 19px;border:1px solid #8d91ab;color:#ecebf7;background:transparent}.primary-button{background:#f7de9d;color:#403529;border-color:#f7de9d;font-weight:800}@media(max-width:1020px){.content{grid-template-columns:minmax(0,1fr)}.info-panel{min-height:auto}.rule-explainer{padding-bottom:12px}.keyhelp{margin-top:13px}}@media(max-width:640px){.shell{padding:14px 12px}.header{padding-bottom:13px;margin-bottom:14px}.mark{min-width:42px;font-size:12px;padding:8px}.mark span{font-size:11px}.identity{gap:9px}.header h1{font-size:16px}.header .eyebrow{font-size:7px}.subtle{padding:9px;font-size:11px}.level-heading h2{font-size:19px}.board-frame{padding:5px;border-radius:11px}.control-bar{flex-wrap:wrap;gap:10px}.dpad{order:0;width:100%;justify-content:center}.dpad button{width:22%;max-width:75px;height:48px}.toolset{order:1;justify-content:center;width:100%}.toolset button{flex:1;min-width:0;font-size:13px}.info-panel{padding:17px}.level-grid{grid-template-columns:repeat(2,1fr)}footer{padding-top:15px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style></head>
+<body>
+<div class="shell">
+ <header class="header"><div class="identity"><span class="mark" aria-hidden="true">W<span>↔</span>W</span><div><div class="eyebrow">AN ORIGINAL RULE PUZZLE</div><h1>Words Change Worlds</h1></div></div><button class="subtle" id="chooseButton">☷ 关卡选择</button></header>
+ <main class="content"><section class="play-area">
+   <div class="level-heading"><div><span class="eyebrow" id="chapter">01 / 08</span><h2 id="levelTitle">一堵会消失的墙</h2></div><div class="turns">步数 <strong id="turnCount">00</strong></div></div>
+   <div class="board-frame"><canvas id="board" role="img" aria-label="规则解谜游戏棋盘。使用方向键或屏幕按钮移动。"></canvas></div>
+   <div class="control-bar"><div class="toolset"><button id="undoButton" title="撤销 Z">↶ <span>撤销</span></button><button id="redoButton" title="重做 Y">↷ <span>重做</span></button><button id="resetButton" title="重新开始 R">⟳ <span>重开</span></button></div><div class="dpad" aria-label="移动控制"><button data-dir="left" aria-label="向左">←</button><button data-dir="up" aria-label="向上">↑</button><button data-dir="down" aria-label="向下">↓</button><button data-dir="right" aria-label="向右">→</button></div></div>
+ </section><aside class="info-panel"><div class="side-head"><span class="eyebrow">THE WORLD NOW SAYS</span><h3>正在生效的规则<span class="live-indicator"></span></h3></div><div class="rules" id="ruleList"></div><div class="rule-explainer">词语本身也是物体。推开 <b>IS</b>，或者改变句子的主语与谓语，世界会立刻重写。</div><div class="hint-block"><div class="hint-head"><span class="eyebrow">A THOUGHT, NOT AN ANSWER</span><button id="hintButton">显示提示</button></div><p id="hintText">在棋盘中推动文字，改写这个世界的规则。</p></div><div class="keyhelp">方向键 / WASD 移动<br>Z 撤销 · Y 重做 · R 重开<br>触屏可滑动棋盘移动</div></aside></main>
+ <footer>这是独立制作的规则解谜原型，参考了 <i>Baba Is You</i> 的核心互动；未使用原作美术、关卡或代码。部分高级结算机制仍待补全。</footer>
+</div>
+<div id="chooser" class="overlay hidden" role="dialog" aria-modal="true" aria-label="选择关卡"><div class="modal select-modal"><div class="modal-head"><div><span class="eyebrow">CHOOSE YOUR QUESTION</span><h2>选择关卡</h2></div><button class="icon-button" id="closeChooser" aria-label="关闭">✕</button></div><div id="levels" class="level-grid"></div><p>所有关卡开放，可以自由选择。进度只保存在本地浏览器。</p></div></div>
+<div id="victory" class="overlay hidden" role="dialog" aria-modal="true" aria-label="通关"><div class="modal win-modal"><span class="success-symbol">✦</span><span class="eyebrow" id="winChapter">关卡 01</span><h2>世界被你改写了。</h2><p id="winText"></p><div class="win-actions"><button id="replayButton" class="ghost-button">再玩一次</button><button id="continueButton" class="primary-button">继续下一关 →</button></div></div></div>
+<script>
+/* Words Change Worlds — clean-room puzzle core.
+ * Board state and rule parsing are deliberately separate from the renderer.
+ * This covers a DOCUMENTED SUBSET of Baba-like interactions, not its full engine.
+ */
+const WCW = (() => {
+  const NOUNS = new Set(['BABA','ROCK','FLAG','WALL','WATER','SKULL','KEY','DOOR','KEKE','TEXT','GRASS']);
+  const PROPS = new Set(['YOU','WIN','PUSH','STOP','SINK','DEFEAT','OPEN','SHUT','HOT','MELT','WEAK','FLOAT']);
+  const VALID = new Set([...NOUNS,...PROPS,'IS','AND','NOT']);
+  const dirs = {up:[0,-1],right:[1,0],down:[0,1],left:[-1,0]};
+  const opposite = {up:'down',right:'left',down:'up',left:'right'};
+  function clone(v){return JSON.parse(JSON.stringify(v));}
+  function make(level){
+    let n=0;
+    return {w:level.w,h:level.h,name:level.name||'',units:level.units.map(u=>({id:++n,type:u.type,x:u.x,y:u.y,word:u.word||undefined,dir:u.dir||'right'})),turn:0,status:'playing'};
+  }
+  function key(x,y){return `${x},${y}`;}
+  function inside(s,x,y){return x>=0 && y>=0 && x<s.w && y<s.h;}
+  function textAt(s){
+    const map = new Map();
+    for(const u of s.units) if(u.type==='TEXT'){
+      const k=key(u.x,u.y); if(!map.has(k))map.set(k,[]);map.get(k).push(u);
+    }
+    return map;
+  }
+  function parse(s){
+    const tiles=textAt(s),rules=[],used=new Set(),seen=new Set();
+    function get(x,y){return tiles.get(key(x,y))||[];}
+    // Parse contiguous phrases, supporting stacked tiles and AND lists on both sides.
+    for(const d of [[1,0],[0,1]])for(let y=0;y<s.h;y++)for(let x=0;x<s.w;x++){
+      if(!get(x,y).length) continue;
+      const preceding=get(x-d[0],y-d[1]);
+      // We also scan internal starts (BABA IS ROCK IS PUSH), so no predecessor guard.
+      const lines=[];
+      let cx=x,cy=y;
+      while(inside(s,cx,cy)&&get(cx,cy).length && lines.length<16){lines.push(get(cx,cy)); cx+=d[0];cy+=d[1];}
+      if(lines.length<3)continue;
+      function visit(idx, ids, toks){
+        if(idx>=lines.length){emit(ids,toks);return;}
+        for(const tile of lines[idx]){
+          if(!VALID.has(tile.word))continue;
+          const next=[...toks,tile.word],nextIds=[...ids,tile.id];
+          emit(nextIds,next);
+          visit(idx+1,nextIds,next);
+        }
+      }
+      function emit(ids,t){
+        const is=t.indexOf('IS');if(is<1||is>=t.length-1)return;
+        let subjects=[],predicates=[];
+        function list(arr, allowed){
+          let out=[],i=0;
+          while(i<arr.length){let neg=false;if(arr[i]==='NOT'){neg=true;i++;}
+            if(!allowed.has(arr[i]))return null;
+            out.push({word:arr[i],not:neg});i++;
+            if(i<arr.length){if(arr[i]!=='AND')return null;i++;if(i===arr.length)return null;}
+          }return out;
+        }
+        subjects=list(t.slice(0,is),NOUNS);
+        predicates=list(t.slice(is+1),new Set([...NOUNS,...PROPS]));
+        if(!subjects||!predicates)return;
+        for(const a of subjects)for(const b of predicates){
+          if(a.not)continue; // negative subjects deferred, never silently reverse their meaning
+          const unique=`${a.word}/${b.not?'!':''}${b.word}/${ids.join(',')}`;
+          if(seen.has(unique))continue;seen.add(unique);
+          rules.push({subject:a.word,predicate:b.word,not:b.not,tiles:[...ids],display:`${a.word} IS ${b.not?'NOT ':''}${b.word}`});
+          ids.forEach(i=>used.add(i));
+        }
+      }
+      visit(0,[],[]);
+    }
+    return {rules,activeWords:[...used]};
+  }
+  function propsFor(unit,rules){
+    const subject=unit.type==='TEXT'?'TEXT':unit.type;
+    const out=new Set(unit.type==='TEXT'?['PUSH']:[]);
+    for(const rule of rules) if(rule.subject===subject&&PROPS.has(rule.predicate)){
+      if(rule.not)out.delete(rule.predicate);else out.add(rule.predicate);
+    }
+    // Negation overrides positive in any ordering.
+    for(const rule of rules) if(rule.subject===subject&&rule.not&&PROPS.has(rule.predicate))out.delete(rule.predicate);
+    return out;
+  }
+  function effects(s,rules){return new Map(s.units.map(u=>[u.id,propsFor(u,rules)]));}
+  function has(u,p,e){return (e.get(u.id)||new Set()).has(p);}
+  function overlapAllowed(a,b,p,e){return has(a,'FLOAT',e)===has(b,'FLOAT',e);}
+  function moveUnit(s,root,dir,e,already=new Set()){
+    if(!root ||already.has(root.id))return false;
+    const [dx,dy]=dirs[dir];if(!dx && !dy)return false;
+    const plan=new Map(),visiting=new Set();
+    // Full transaction: no partial push when the final destination is blocked.
+    function traverse(u){
+      if(plan.has(u.id))return true;
+      if(visiting.has(u.id))return false;
+      const nx=u.x+dx,ny=u.y+dy;
+      if(!inside(s,nx,ny))return false;
+      visiting.add(u.id);
+      for(const v of s.units){
+        if(v.id===u.id ||v.x!==nx||v.y!==ny)continue;
+        // Objects with PUSH must be moved whether or not they also have STOP.
+        if(has(v,'PUSH',e)){
+          if(!traverse(v)){visiting.delete(u.id);return false;}
+        } else if(has(v,'STOP',e)){
+          visiting.delete(u.id);return false;
+        }
+      }
+      visiting.delete(u.id);plan.set(u.id,{x:nx,y:ny});return true;
+    }
+    if(!traverse(root))return false;
+    const initial=new Map(s.units.map(u=>[u.id,{x:u.x,y:u.y}]));
+    for(const u of s.units)if(plan.has(u.id)){Object.assign(u,plan.get(u.id));already.add(u.id);}
+    // Only drag PULL objects from behind successfully moved units.
+    const pulled=new Set();
+    function drag(fromX,fromY,depth){
+      if(depth>s.units.length)return;
+      const bx=fromX-dx,by=fromY-dy;
+      for(const v of s.units){
+        if(v.x!==bx||v.y!==by||plan.has(v.id)||pulled.has(v.id)||!has(v,'PULL',e))continue;
+        // PULL is not a wall: failure to pull cannot undo a successful foreground move.
+        const obstacle=s.units.some(other=>other.id!==v.id&&other.x===fromX&&other.y===fromY&&(has(other,'STOP',e)||has(other,'PUSH',e)));
+        if(obstacle)continue;
+        pulled.add(v.id);v.x=fromX;v.y=fromY;already.add(v.id);drag(bx,by,depth+1);
+      }
+    }
+    for(const [id] of plan){let orig=initial.get(id);drag(orig.x,orig.y,0);}
+    return true;
+  }
+  function transform(s,rules){
+    const out=[];let next=Math.max(0,...s.units.map(u=>u.id));
+    for(const u of s.units){
+      const type=u.type==='TEXT'?'TEXT':u.type;
+      let dest=rules.filter(r=>r.subject===type&&!r.not&&NOUNS.has(r.predicate)&&r.predicate!==type)
+        .filter(r=>!rules.some(n=>n.subject===type&&n.not&&n.predicate===r.predicate))
+        .map(r=>r.predicate);
+      dest=[...new Set(dest)];
+      if(dest.length){for(const d of dest)out.push({...u,id:++next,type:d,word:undefined});}
+      else out.push(u);
+    }
+    s.units=out;
+  }
+  function contact(s,rules){
+    let e=effects(s,rules),removed=new Set();
+    for(const a of s.units)for(const b of s.units){
+      if(a.id===b.id||a.x!==b.x||a.y!==b.y||!overlapAllowed(a,b,null,e))continue;
+      if(has(a,'SINK',e)) {removed.add(a.id);removed.add(b.id);}
+      if(has(a,'DEFEAT',e)&&has(b,'YOU',e))removed.add(b.id);
+      if(has(a,'HOT',e)&&has(b,'MELT',e))removed.add(b.id);
+      if(has(a,'OPEN',e)&&has(b,'SHUT',e)){removed.add(a.id);removed.add(b.id);}
+      if(has(a,'WEAK',e))removed.add(a.id);
+    }
+    if(removed.size){s.units=s.units.filter(u=>!removed.has(u.id));e=effects(s.units.length?s:{...s,units:[]},parse(s).rules);}
+    for(const a of s.units){if(!has(a,'YOU',e))continue;
+      if(has(a,'WIN',e)){s.status='won';break;}
+      if(s.units.some(b=>b.id!==a.id&&b.x===a.x&&b.y===a.y&&has(b,'WIN',e)&&overlapAllowed(a,b,null,e))){s.status='won';break;}
+    }
+  }
+  function step(previous,dir){
+    if(previous.status!=='playing'||!dirs[dir])return clone(previous);
+    const s=clone(previous),initial=parse(s),e=effects(s,initial.rules),already=new Set();
+    // The frontmost YOU moves first, so stacked/multiple player objects are processed once.
+    const [dx,dy]=dirs[dir];
+    const controlled=s.units.filter(u=>has(u,'YOU',e)).sort((a,b)=>(b.x*dx+b.y*dy)-(a.x*dx+a.y*dy)||a.id-b.id);
+    for(const u of controlled){const current=s.units.find(v=>v.id===u.id);if(current)moveUnit(s,current,dir,e,already);}
+    const afterMovement=parse(s);transform(s,afterMovement.rules);
+    contact(s,parse(s).rules);
+    s.turn=previous.turn+1;
+    return s;
+  }
+  function describe(s){const p=parse(s);return { ...p, props:effects(s,p.rules)};}
+  function fingerprint(s){return s.units.map(u=>`${u.type}:${u.word||''}@${u.x},${u.y}`).sort().join('|');}
+  return {NOUNS,PROPS,dirs,make,parse,propsFor,effects,step,describe,fingerprint,clone};
+})();
+if(typeof module!=='undefined')module.exports=WCW;
+
+</script><script>
+/* Hand-authored, original puzzles. They teach changes to the rules, not pushing a box onto a flag. */
+const LEVELS = (()=>{
+  const types={'#':'WALL','b':'BABA','r':'ROCK','f':'FLAG','w':'WATER','s':'SKULL','k':'KEKE','d':'DOOR','g':'GRASS'};
+  function build(name,board,phrases,extras,hint,concept){
+    const w=Math.max(...board.map(row=>row.length));
+    const units=[];
+    for(let y=0;y<board.length;y++)for(let x=0;x<w;x++){
+      const type=types[(board[y]||'')[x]];
+      if(type)units.push({type,x,y});
+    }
+    for(const [phrase,x,y,axis='h'] of phrases){
+      phrase.split(' ').forEach((word,i)=>units.push({type:'TEXT',word,x:x+(axis==='h'?i:0),y:y+(axis==='v'?i:0)}));
+    }
+    for(const [word,x,y] of extras)units.push({type:'TEXT',word,x,y});
+    return {name,w,h:board.length,units,hint,concept};
+  }
+  const baseBaba=['BABA IS YOU',0,0];
+  const baseFlag=['FLAG IS WIN',9,0];
+  const baseWall=['WALL IS STOP',0,8];
+  const levels=[
+    build('01 · 一堵会消失的墙',[
+      '......#.....',
+      '..b...#..f..',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,['WALL IS STOP',1,5]],[],
+    '墙不会消失；消失的是“墙必须阻挡你”这条规定。试着推动 STOP 让它离开句子。','打断一条规则'),
+    build('02 · 更换终点',[
+      '......#.....',
+      '..b.r.#...f.',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,baseWall,['ROCK IS',1,5]], [['WIN',3,6]],
+    '旗帜无法到达。别再想怎么去旗帜那里：尝试把 ROCK IS ... 补完整。','重新定义胜利'),
+    build('03 · 远处的你',[
+      '......#.....',
+      '..b...#..f..',
+      '......#.....',
+      '......#..k..',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,baseWall,['KEKE IS',1,5]], [['YOU',3,6]],
+    '你并不需要跨过那道墙。你可以让隔墙另一侧的生物也变成 YOU。','转移控制权'),
+    build('04 · 隔墙变身',[
+      '......#.....',
+      '..b...#..f..',
+      '......#.....',
+      '......#.r...',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,baseWall,['ROCK IS',1,5]], [['BABA',3,6]],
+    '隔墙右侧只有 ROCK。把 ROCK IS BABA 拼好，那里就会出现新的 BABA。','改变实体身份'),
+    build('05 · 消失的河',[
+      '......#.....',
+      '......#.....',
+      '......#..f..',
+      '......#.....',
+      '..b.r.w.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,['WALL IS STOP',0,8],['ROCK IS PUSH',3,0],['WATER IS SINK',6,1]],[],
+    '唯一的通路被水占据：水与岩石重叠会一起消失。先把 ROCK 推到水里。','物体接触与消除'),
+    build('06 · 两道定义',[
+      '......#.....',
+      '..b...#.....',
+      '......#..f..',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseWall,['ROCK IS WIN',4,0],['FLAG IS',1,5],['ROCK IS',3,3]], [['ROCK',3,6],['YOU',5,4]],
+    '一个变化还不够。先把旗帜变成 ROCK，再让 ROCK 同时拥有 YOU 和 WIN。','组合变形与控制规则'),
+    build('07 · 重写门的含义',[
+      '......#.....',
+      '..b...#..f..',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,baseWall,['WALL IS NOT',1,4]], [['STOP',4,5]],
+    '有时不需要拆开句子。你可以改变句子表达的意思。把 NOT 插入合适的位置。','否定规则'),
+    build('08 · 世界会回答',[
+      '............',
+      '..b...#..f..',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....',
+      '......#.....'
+    ],[baseBaba,baseFlag,baseWall,['BABA IS',1,5]], [['WIN',3,6]],
+    '也许你不需要旗帜。你已经拥有一种身份，只差给它增加一个条件。','自身成为胜利条件')
+  ];
+  return levels;
+})();
+if(typeof module!=='undefined')module.exports=LEVELS;
+
+</script><script>
+/* Rendering and interaction are deliberately decoupled from WCW state logic. */
+(()=>{
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const canvas=$('board'),ctx=canvas.getContext('2d');
+ const state={index:0,game:null,history:[],future:[],seen:new Set(),hint:false,chooser:false};
+ const colors={BABA:'#fff0be',KEKE:'#92f0db',ROCK:'#a7a4bc',FLAG:'#ffc86b',WALL:'#817baf',WATER:'#6ec6ef',SKULL:'#fa8e9b',KEY:'#e2c26c',DOOR:'#a17b77',GRASS:'#86cb95'};
+ const saved=()=>{try{return JSON.parse(localStorage.getItem('wcw-rebuild-progress')||'[]')}catch{return []}};
+ const completed=new Set(saved());
+ function persist(){try{localStorage.setItem('wcw-rebuild-progress',JSON.stringify([...completed]))}catch{}}
+ function load(index){state.index=index;state.game=WCW.make(LEVELS[index]);state.history=[];state.future=[];state.hint=false;state.chooser=false;state.seen=new Set([WCW.fingerprint(state.game)]);$('chooser').classList.add('hidden');$('victory').classList.add('hidden');update();}
+ function undo(){if(!state.history.length)return;state.future.push(WCW.clone(state.game));state.game=state.history.pop();$('victory').classList.toggle('hidden',state.game.status!=='won');update();}
+ function redo(){if(!state.future.length)return;state.history.push(WCW.clone(state.game));state.game=state.future.pop();$('victory').classList.toggle('hidden',state.game.status!=='won');update();}
+ function action(dir){if(state.chooser||state.game.status!=='playing')return;
+   const old=WCW.clone(state.game),next=WCW.step(state.game,dir);
+   const changed=WCW.fingerprint(next)!==WCW.fingerprint(old);
+   if(!changed)return;
+   state.history.push(old);state.future=[];state.game=next;
+   if(next.status==='won'){completed.add(state.index);persist();$('victory').classList.remove('hidden');$('winText').textContent=LEVELS[state.index].concept;$('continueButton').textContent=state.index===LEVELS.length-1?'回到关卡列表':'继续下一关 →';}
+   update();
+ }
+ function rect(x,y,w,h,r,fill,stroke,width=1){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}}
+ function poly(points,fill,stroke,width=1){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}}
+ function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
+ function drawEntity(u,x,y,s,t){
+   const type=u.type,c=colors[type]||'#d8d1fa';ctx.save();ctx.translate(x,y);
+   if(type==='WALL'){
+     rect(s*.055,s*.055,s*.89,s*.89,s*.18,'#50546f','#888caf',s*.025);
+     rect(s*.12,s*.11,s*.76,s*.30,s*.12,'#777b9c');
+     rect(s*.12,s*.52,s*.76,s*.35,s*.12,'#696d8e');
+     ctx.strokeStyle='#454962';ctx.lineWidth=s*.034;ctx.beginPath();ctx.moveTo(s*.51,s*.12);ctx.lineTo(s*.51,s*.41);ctx.moveTo(s*.35,s*.54);ctx.lineTo(s*.35,s*.85);ctx.stroke();
+   } else if(type==='BABA'||type==='KEKE'){
+     ellipse(s*.5,s*.79,s*.31,s*.1,'#151a33a9');
+     const main=type==='BABA'?'#fff1d8':'#91e8d0',edge=type==='BABA'?'#dbbfa9':'#3d9f98';
+     ellipse(s*.49,s*.54,s*.29,s*.3,main);ellipse(s*.36,s*.32,s*.11,s*.15,main);ellipse(s*.63,s*.32,s*.11,s*.15,main);
+     ellipse(s*.40,s*.52,s*.043,s*.06,'#29263b');ellipse(s*.60,s*.52,s*.043,s*.06,'#29263b');
+     ellipse(s*.5,s*.64,s*.043,s*.028,edge);ellipse(s*.3,s*.75,s*.09,s*.07,main);ellipse(s*.69,s*.75,s*.09,s*.07,main);
+     ellipse(s*.34,s*.63,s*.05,s*.028,type==='BABA'?'#f7b3b9':'#f3ddb5');ellipse(s*.66,s*.63,s*.05,s*.028,type==='BABA'?'#f7b3b9':'#f3ddb5');
+   } else if(type==='ROCK'){
+     ellipse(s*.52,s*.82,s*.32,s*.085,'#0c112899');
+     poly([[s*.17,s*.72],[s*.24,s*.38],[s*.45,s*.2],[s*.71,s*.31],[s*.84,s*.64],[s*.69,s*.8],[s*.28,s*.8]],'#aaaac4','#706f99',s*.04);
+     poly([[s*.25,s*.4],[s*.45,s*.23],[s*.55,s*.4],[s*.39,s*.54]],'#d0d0e1');
+     poly([[s*.55,s*.42],[s*.7,s*.34],[s*.78,s*.65],[s*.57,s*.7]],'#8585b0');
+   } else if(type==='FLAG'){
+     ellipse(s*.5,s*.85,s*.27,s*.07,'#0c112999');
+     rect(s*.40,s*.2,s*.05,s*.64,s*.02,'#e3e8ed');
+     poly([[s*.45,s*.21],[s*.85,s*.29],[s*.73,s*.46],[s*.45,s*.48]],'#ffbc6b','#ffe4a1',s*.022);
+     poly([[s*.45,s*.21],[s*.71,s*.265],[s*.60,s*.41],[s*.45,s*.48]],'#ff7e84');
+   } else if(type==='WATER'){
+     rect(s*.08,s*.31,s*.84,s*.5,s*.24,'#3d97c9');
+     ctx.strokeStyle='#ace8f2';ctx.lineWidth=s*.055;ctx.lineCap='round';for(let i=0;i<2;i++){let yy=s*(.47+i*.18);ctx.beginPath();ctx.moveTo(s*.23,yy);ctx.quadraticCurveTo(s*.38,yy-s*.09,s*.52,yy);ctx.quadraticCurveTo(s*.66,yy+s*.08,s*.77,yy);ctx.stroke()}
+   } else if(type==='SKULL'){
+     ellipse(s*.5,s*.52,s*.29,s*.28,'#f7b6bc');rect(s*.36,s*.57,s*.28,s*.2,s*.05,'#f7b6bc');
+     ellipse(s*.4,s*.52,s*.072,s*.093,'#51384b');ellipse(s*.60,s*.52,s*.072,s*.093,'#51384b');
+     poly([[s*.5,s*.59],[s*.44,s*.66],[s*.56,s*.66]],'#51384b');
+   } else if(type==='GRASS'){
+     for(let i=0;i<5;i++){let bx=s*(.23+i*.135);poly([[bx,s*.8],[bx-s*.05,s*.43],[bx+s*.08,s*.56]],i%2?'#70c58d':'#99deb0');}
+   } else if(type==='DOOR'){
+     rect(s*.23,s*.16,s*.53,s*.72,s*.07,'#a96d6a','#edb4a3',s*.03);ellipse(s*.63,s*.57,s*.04,s*.04,'#f6d09e');
+   } else if(type==='KEY'){
+     ctx.strokeStyle='#f8d873';ctx.lineWidth=s*.09;ctx.beginPath();ctx.arc(s*.38,s*.38,s*.14,0,Math.PI*2);ctx.moveTo(s*.48,s*.48);ctx.lineTo(s*.76,s*.76);ctx.moveTo(s*.65,s*.65);ctx.lineTo(s*.74,s*.57);ctx.stroke();
+   }
+   ctx.restore();
+ }
+ function paint(){
+   const g=state.game;if(!g)return;const r=canvas.getBoundingClientRect();
+   if(r.width<1||r.height<1)return;let pixelRatio=Math.min(2,window.devicePixelRatio||1);
+   canvas.width=Math.round(r.width*pixelRatio);canvas.height=Math.round(r.height*pixelRatio);
+   ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.clearRect(0,0,r.width,r.height);
+   const tile=Math.min((r.width-16)/g.w,(r.height-16)/g.h),ox=(r.width-g.w*tile)/2,oy=(r.height-g.h*tile)/2;
+   const p=WCW.describe(g),active=new Set(p.activeWords);
+   rect(ox-5,oy-5,g.w*tile+10,g.h*tile+10,tile*.22,'#1b203a','#535776',2);
+   for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){
+     rect(ox+x*tile+.5,oy+y*tile+.5,tile-1,tile-1,tile*.095,((x+y)%2)?'#242a45':'#272d49');
+     if((x*13+y*7)%11===0){ellipse(ox+(x+.30)*tile,oy+(y+.68)*tile,tile*.024,tile*.024,'#38405f');}
+   }
+   const ordinary=g.units.filter(u=>u.type!=='TEXT'),words=g.units.filter(u=>u.type==='TEXT');
+   for(const u of ordinary)drawEntity(u,ox+u.x*tile,oy+u.y*tile,tile,g.turn);
+   for(const u of words){
+     let x=ox+u.x*tile,y=oy+u.y*tile,isOn=active.has(u.id);
+     ctx.shadowBlur=isOn?tile*.24:0;ctx.shadowColor='#ffcf86';
+     rect(x+tile*.075,y+tile*.08,tile*.85,tile*.84,tile*.13,isOn?'#ffebad':'#d8d2e8',isOn?'#fff3d3':'#918cb5',tile*.028);
+     ctx.shadowBlur=0;
+     rect(x+tile*.12,y+tile*.13,tile*.76,tile*.73,tile*.092,isOn?'#fff5c6':'#eeeaf7');
+     let n=u.word.length;let size=n>=6?.17:n>=5?.197:n>=4?.235:.28;
+     ctx.fillStyle=isOn?'#6a422e':'#403b61';ctx.font=`900 ${tile*size}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+     ctx.fillText(u.word,x+tile*.5,y+tile*.52,tile*.78);
+   }
+ }
+ function update(){
+   const lev=LEVELS[state.index],g=state.game;
+   $('chapter').textContent=String(state.index+1).padStart(2,'0')+' / '+String(LEVELS.length).padStart(2,'0');
+   $('levelTitle').textContent=lev.name.replace(/^\d+ · /,'');
+   $('turnCount').textContent=String(g.turn).padStart(2,'0');
+   $('ruleList').replaceChildren();
+   let seen=new Set();for(const rule of WCW.parse(g).rules){
+     if(seen.has(rule.display))continue;seen.add(rule.display);
+     let e=document.createElement('span');e.className='rule-chip';e.textContent=rule.display;$('ruleList').appendChild(e);
+   }
+   if(!seen.size){let e=document.createElement('span');e.className='empty-rule';e.textContent='没有正在生效的规则';$('ruleList').appendChild(e);}
+   $('hintText').textContent=state.hint?lev.hint:'在棋盘中推动文字，改写这个世界的规则。';
+   $('hintButton').textContent=state.hint?'隐藏提示':'显示提示';
+   $('undoButton').disabled=!state.history.length;$('redoButton').disabled=!state.future.length;
+   $('winChapter').textContent='关卡 '+String(state.index+1).padStart(2,'0');
+   paint();
+ }
+ function showChooser(){state.chooser=true;const chooser=$('chooser');chooser.classList.remove('hidden');$('levels').replaceChildren();LEVELS.forEach((level,i)=>{
+   const b=document.createElement('button');b.className='level-option'+(completed.has(i)?' done':'')+(i===state.index?' selected':'');
+   b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><small>${level.name.replace(/^\d+ · /,'')}</small>${completed.has(i)?'<em>✓</em>':''}`;
+   b.addEventListener('click',()=>load(i));$('levels').appendChild(b);
+ });}
+ function bind(){
+   window.addEventListener('keydown',ev=>{
+     if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(ev.key))ev.preventDefault();
+     if(state.chooser){if(ev.key==='Escape'){state.chooser=false;$('chooser').classList.add('hidden');}return;}
+     const k=ev.key.toLowerCase(),mapped={arrowup:'up',w:'up',arrowright:'right',d:'right',arrowdown:'down',s:'down',arrowleft:'left',a:'left'};
+     if(mapped[k]){if(state.game.status==='won')return;action(mapped[k]);}
+     else if(k==='z'||k==='backspace')undo();else if(k==='y')redo();else if(k==='r')load(state.index);
+     else if(k==='escape')showChooser();else if(k==='enter'&&state.game.status==='won')advance();
+   });
+   document.querySelectorAll('[data-dir]').forEach(btn=>btn.addEventListener('click',()=>action(btn.dataset.dir)));
+   $('undoButton').onclick=undo;$('redoButton').onclick=redo;$('resetButton').onclick=()=>load(state.index);
+   $('chooseButton').onclick=showChooser;$('closeChooser').onclick=()=>{state.chooser=false;$('chooser').classList.add('hidden');};
+   $('hintButton').onclick=()=>{state.hint=!state.hint;update();};
+   $('continueButton').onclick=advance;
+   $('replayButton').onclick=()=>load(state.index);
+   let point=null;canvas.addEventListener('pointerdown',e=>point={x:e.clientX,y:e.clientY});
+   canvas.addEventListener('pointerup',e=>{if(!point)return;const dx=e.clientX-point.x,dy=e.clientY-point.y;point=null;if(Math.max(Math.abs(dx),Math.abs(dy))<22)return;action(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));});
+   new ResizeObserver(()=>paint()).observe(canvas);
+ }
+ function advance(){if(state.index+1===LEVELS.length){$('victory').classList.add('hidden');showChooser();}else load(state.index+1);}
+ bind();load(0);
+})();
+
+</script>
+</body></html>
