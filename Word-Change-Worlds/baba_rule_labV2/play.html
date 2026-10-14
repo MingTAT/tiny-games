@@ -1,8 +1,19 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Words Change Worlds — Rule Engine</title><style>:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#e8eee8;background:#0e1821}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0,#1b3b43 0,transparent 38%),#0e1821}button{font:inherit;cursor:pointer;color:#e5ece6;border:1px solid #435861;background:#253e4a;border-radius:9px;padding:10px 12px;transition:.14s}button:hover{background:#345363;border-color:#6c9695}button:focus-visible{outline:2px solid #e0c78b;outline-offset:3px}.shell{max-width:1430px;margin:auto;padding:36px 28px 18px}.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;padding-bottom:30px}.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:800;color:#c2aa78}.mast h1{font-size:clamp(29px,3.5vw,48px);line-height:1.05;letter-spacing:-.04em;margin:10px 0 12px;color:#f5efdb}.mast p{color:#a7b9b7;font-size:14px;margin:0}.version{font-size:12px;padding:9px 12px;color:#d1dcce;border:1px solid #3d5361;border-radius:30px;white-space:nowrap}.game-layout{display:grid;grid-template-columns:minmax(0,1fr) 302px;gap:20px;align-items:start}.left{min-width:0;background:#172a34;border:1px solid #2c4650;border-radius:18px;padding:20px;box-shadow:0 18px 70px #07131b55}.board-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.board-head h2{margin:5px 0 0;font-size:19px;letter-spacing:.01em}.counter{display:flex;gap:15px;color:#b3c8c7;font-size:12px;align-items:center}.counter strong{font-size:18px;color:#f6e0a4;font-variant-numeric:tabular-nums}.game-area{overflow:hidden;display:flex;justify-content:center;background:#101d28;border:1px solid #2a444c;border-radius:12px;padding:8px}.game-area canvas{display:block;max-width:100%;height:auto;max-height:660px;aspect-ratio:960/690;touch-action:none}.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}.dpad{display:flex;flex-direction:column;align-items:center;gap:5px}.dpad button{padding:0;width:42px;height:38px;font-size:19px}.dpad>div{display:flex;gap:5px}.actions{display:flex;flex-wrap:wrap;justify-content:end;gap:7px}.actions button{font-size:12px}.hint{min-height:20px;margin:8px 0 0;color:#e2ca87;font-size:13px}.side{display:flex;flex-direction:column;gap:14px}.pane{background:#1b303b;border:1px solid #334d58;border-radius:14px;padding:19px}.pane h3{margin:8px 0 16px;font-size:17px}.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.level-btn{padding:10px 0;font-weight:800;font-size:13px}.level-btn.selected{background:#d4ba7b;color:#1e3136;border-color:#e9ca8b}.small{font-size:12px;line-height:1.7;color:#a5b8b8;margin:14px 0 0}.rules{display:flex;flex-wrap:wrap;gap:7px;min-height:30px;color:#9db0ad;font-size:13px}.rule-tag{display:inline-flex;max-width:100%;font-size:12px;line-height:1.4;font-weight:800;color:#f4d6a0;background:#3a4344;border:1px solid #756e53;border-radius:6px;padding:7px 8px}pre{white-space:pre-wrap;word-break:break-word;font:12px/1.7 ui-monospace,monospace;color:#a8c9c9;max-height:160px;overflow:auto;margin:0}footer{font-size:12px;color:#738f95;text-align:center;padding:23px 0}@media(max-width:1050px){.game-layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.game-area canvas{max-height:570px}}@media(max-width:640px){.shell{padding:20px 10px}.mast{padding:5px 9px 20px}.mast h1{font-size:29px}.version{display:none}.left{padding:9px}.board-head{padding:5px 4px}.board-head h2{font-size:16px}.game-area{padding:0}.controls{align-items:flex-start}.actions{max-width:65%;justify-content:flex-end}.actions button{font-size:11px;padding:8px}.side{display:flex}.pane{padding:15px}}
+
+/* Victory is a real, keyboard-accessible action surface, not text drawn on canvas. */
+.game-area{position:relative}
+.win-overlay[hidden]{display:none!important}
+.win-overlay{position:absolute;inset:8px;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(4,15,22,.72);backdrop-filter:blur(4px);z-index:5}
+.win-panel{width:min(440px,96%);border:1px solid #9cbbab;background:#142934;border-radius:22px;padding:32px 24px;text-align:center;box-shadow:0 18px 70px #0009}
+.win-star{color:#efd18d;font-size:24px;letter-spacing:.24em}.win-panel h3{font-size:clamp(23px,3vw,33px);color:#f4e7bf;margin:15px 0 6px}.win-panel p{color:#c5d8d1;margin:0 0 23px}.win-panel button{font-size:14px}
+.win-panel .next-level{display:block;width:100%;font-size:18px;font-weight:900;color:#1b302f;background:#efd18d;border-color:#fbe1a8;padding:16px}.win-panel .next-level:hover{background:#fff0c2}
+.win-actions{display:flex;gap:8px;justify-content:center;margin-top:13px}.win-actions button{flex:1}
+.key-tip{display:block;color:#879f9e;font-size:11px;margin-top:15px}.level-btn.advanced{border-color:#a28555}.level-btn.cleared{color:#c0e7c5}.level-btn.selected{color:#1e3136}.level-btn.advanced.selected{border-color:#ffe2a2}
+@media(max-width:640px){.win-panel{padding:24px 15px}.win-actions button{font-size:12px;padding:10px 8px}.win-overlay{inset:0}}
 </style></head>
-<body><main class="shell"><header class="mast"><div><div class="eyebrow">WORDS CHANGE WORLDS · ENGINE EDITION</div><h1>世界由文字决定。</h1><p>移动一个词，改变一条规则，整个世界就可能不再相同。</p></div><div class="version">独立引擎 · v1.1</div></header>
-<section class="game-layout"><div class="left"><div class="board-head"><div><span class="eyebrow">CURRENT PUZZLE</span><h2 id="level-title"></h2></div><div class="counter"><span>步数 <strong id="turn">0</strong></span><span id="status">进行中</span></div></div><div id="game-area" class="game-area"><canvas id="world" width="960" height="690" aria-label="可移动文字的规则拼图棋盘"></canvas></div><div class="controls"><div class="dpad"><button data-action="up" aria-label="上">↑</button><div><button data-action="left" aria-label="左">←</button><button data-action="down" aria-label="下">↓</button><button data-action="right" aria-label="右">→</button></div></div><div class="actions"><button data-action="undo">↶ 撤销 Z</button><button data-action="redo">↷ 重做 Y</button><button data-action="restart">⟳ 重开 R</button><button data-action="wait">等待一步</button><button data-action="hint">查看提示</button></div></div><p class="hint" id="hint"></p></div>
-<aside class="side"><div class="pane"><div class="eyebrow">SELECT PUZZLE</div><h3>关卡</h3><div id="levels" class="levels"></div><p class="small">所有关卡均可直接选择。解谜关卡和规则测试分开维护。</p></div><div class="pane"><div class="eyebrow">ACTIVE RULES</div><h3>当前生效的规则</h3><div id="rules" class="rules"></div><p class="small">推开一个词，规则立即改变。金色词块表示正在构成有效规则；获得 WORD 的物体也可参与组句。</p></div><div class="pane"><div class="eyebrow">LAST TURN EVENTS</div><h3>结算轨迹</h3><pre id="trace"></pre></div><div class="pane"><div class="eyebrow">ABOUT THIS BUILD</div><p class="small">规则引擎与画面彻底分离；支持无界面测试与操作回放。此版本不是原作的完整兼容实现，也未使用原作资源。</p></div></aside></section><footer>方向键 / WASD 移动 · Z 撤销 · Y 重做 · R 重开 · 触屏滑动</footer></main><script>(function(){
+<body><main class="shell"><header class="mast"><div><div class="eyebrow">WORDS CHANGE WORLDS · ENGINE EDITION</div><h1>世界由文字决定。</h1><p>移动一个词，改变一条规则，整个世界就可能不再相同。</p></div><div class="version">独立引擎 · v1.2</div></header>
+<section class="game-layout"><div class="left"><div class="board-head"><div><span class="eyebrow">ADVANCED RULE PUZZLES</span><h2 id="level-title"></h2></div><div class="counter"><span>步数 <strong id="turn">0</strong></span><span id="status">进行中</span></div></div><div id="game-area" class="game-area"><canvas id="world" width="960" height="690" aria-label="可移动文字的规则拼图棋盘"></canvas><div id="win-overlay" class="win-overlay" hidden role="dialog" aria-label="关卡胜利"><div class="win-panel"><div class="win-star">✦ ✦ ✦</div><h3 id="victory-title">关卡完成！</h3><p id="victory-detail"></p><button id="next-level" class="next-level">下一关 →</button><div class="win-actions"><button id="replay-level">↺ 重玩本关</button><button id="view-levels">选择关卡</button></div><span class="key-tip">按 Enter 也可以进入下一关</span></div></div></div><div class="controls"><div class="dpad"><button data-action="up" aria-label="上">↑</button><div><button data-action="left" aria-label="左">←</button><button data-action="down" aria-label="下">↓</button><button data-action="right" aria-label="右">→</button></div></div><div class="actions"><button data-action="undo">↶ 撤销 Z</button><button data-action="redo">↷ 重做 Y</button><button data-action="restart">⟳ 重开 R</button><button data-action="wait">等待一步</button><button data-action="hint">查看提示</button></div></div><p class="hint" id="hint"></p></div>
+<aside class="side"><div class="pane"><div class="eyebrow">SELECT PUZZLE</div><h3>关卡 · 01–07 教学 / 08–13 进阶</h3><div id="levels" class="levels"></div><p class="small">默认从进阶关卡开始。01–07 是此前保留的短教学；进阶关卡强调规则组合。通关后可直接按下一关，✓ 表示已通关。</p></div><div class="pane"><div class="eyebrow">ACTIVE RULES</div><h3>当前生效的规则</h3><div id="rules" class="rules"></div><p class="small">推开一个词，规则立即改变。金色词块表示正在构成有效规则；获得 WORD 的物体也可参与组句。</p></div><div class="pane"><div class="eyebrow">LAST TURN EVENTS</div><h3>结算轨迹</h3><pre id="trace"></pre></div><div class="pane"><div class="eyebrow">ABOUT THIS BUILD</div><p class="small">规则引擎与画面彻底分离；支持无界面测试与操作回放。此版本不是原作的完整兼容实现，也未使用原作资源。</p></div></aside></section><footer>方向键 / WASD 移动 · Z 撤销 · Y 重做 · R 重开 · 触屏滑动</footer></main><script>(function(){
 const modules=Object.create(null);
 const cache=Object.create(null);
 function require(name){const key=name.replace(/^\.\//, "");if(cache[key])return cache[key].exports;if(!modules[key])throw new Error("Unknown module: "+key);const m={exports:{}};cache[key]=m;modules[key](m,m.exports,require);return m.exports;}
@@ -515,6 +526,22 @@ exports.puzzles = [
         '............', '............', '............', '....b.......', '............', '...r........', '........r...', '............', '............'
     ], [['BABA IS YOU', 6, 0], ['ROCK ON WATER IS', 0, 1]], [['TEXT', 4, 2], ['IS', 4, 5], ['WIN', 5, 5]], [{ kind: 'WATER', x: 3, y: 5 }])
 ];
+// The original seven puzzles remain available as short lessons. The advanced
+// collection is deliberately separate: victory requires interacting with more
+// than one rule, and the state-replay fixtures test the full move sequence.
+function board(w, h, objects, wallColumns = []) {
+    const a = Array.from({ length: h }, () => Array(w).fill('.'));
+    for (const x of wallColumns)
+        for (let y = 0; y < h; y++)
+            a[y][x] = '#';
+    for (const [token, x, y] of objects) {
+        if (a[y]?.[x] === undefined)
+            throw new Error('Bad puzzle coordinate');
+        a[y][x] = token;
+    }
+    return a.map(row => row.join(''));
+}
+exports.puzzles.push(level('08 — 法律冲突', '墙的 STOP 仍然存在。仅仅推开几块墙无济于事；试着补全另一句相反的规则。', '进阶 · 否定优先级', board(14, 11, [['b', 2, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 1], ['FLAG IS', 9, 3], ['WALL IS NOT', 2, 4]], [['STOP', 5, 7], ['WIN', 11, 6]]), level('09 — 远端施工', '左边建立第二个 YOU，右边再为旗帜建立 WIN。两个身体会一起响应方向键。', '进阶 · 控制权与同步移动', board(14, 11, [['b', 2, 8], ['k', 9, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 0], ['KEKE IS', 2, 4], ['FLAG IS', 9, 2]], [['YOU', 4, 7], ['WIN', 11, 5]]), level('10 — 石头宣言', '岩石可以充当规则文字。先让它成为 WIN，但 PUSH 也意味着你暂时不能踩上去。', '进阶 · WORD × PUSH × WIN', board(14, 11, [['b', 2, 7], ['r', 7, 4]]), [['ROCK IS WORD', 1, 0], ['BABA IS YOU', 7, 0], ['ROCK IS PUSH', 1, 9]], [['IS', 8, 4], ['WIN', 9, 6]]), level('11 — 两次重写', '把水上的石头变成一个可推的 ROCK 文字，让这块文字参与第二条胜利规则；真正的胜利目标是另一块岩石。', '进阶 · 条件变形与规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8]]), [['BABA IS YOU', 8, 0], ['ROCK ON WATER IS', 1, 2]], [['TEXT', 5, 4], ['IS', 6, 6], ['WIN', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('12 — 远端变身', '石头在水中会变成文字。用这块文字组出 ROCK IS BABA，然后想一想谁能够隔墙行动。', '进阶 · 条件变形 × 控制权转移', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS WIN', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('13 — 继承者', '先用条件规则把水中的岩石变成文字，再把另一侧的岩石变成可控制的 BABA。最后别忘了：旗帜目前并不是 WIN。', '大师练习 · 三段规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8], ['WIN', 11, 5]], [{ kind: 'WATER', x: 5, y: 6 }]));
 
 };
 modules["ui"]=function(module,exports,require){
@@ -532,8 +559,23 @@ const titleEl = document.querySelector('#level-title');
 const levelEl = document.querySelector('#levels');
 const hintEl = document.querySelector('#hint');
 const traceEl = document.querySelector('#trace');
-let level = 0;
-let state = (0, core_1.clone)(levels_1.puzzles[0].state);
+let level = 7; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let state = (0, core_1.clone)(levels_1.puzzles[level].state);
+const overlay = document.querySelector('#win-overlay');
+const nextButton = document.querySelector('#next-level');
+const victoryTitle = document.querySelector('#victory-title');
+const victoryDetail = document.querySelector('#victory-detail');
+const completed = new Set();
+try {
+    for (const n of JSON.parse(localStorage.getItem('wcw-engine-1.2-completed') || '[]'))
+        if (Number.isInteger(n))
+            completed.add(n);
+}
+catch { /* Browsers may block file:// storage. */ }
+function rememberWin() { completed.add(level); try {
+    localStorage.setItem('wcw-engine-1.2-completed', JSON.stringify([...completed]));
+}
+catch { } }
 let past = [];
 let future = [];
 let lastEvents = [];
@@ -549,6 +591,8 @@ function apply(dir) {
     const result = (0, core_1.step)(state, dir);
     state = result.state;
     lastEvents = result.events.filter(e => e.type !== 'reparse').map(e => `${e.phase} · ${e.type} ${e.detail || ''}`).slice(-7);
+    if (state.status === 'won')
+        rememberWin();
     draw();
 }
 function undo() { if (!past.length)
@@ -685,16 +729,15 @@ function render() {
         ctx.fillStyle = C.ink;
         ctx.fillText(word, x + size * .5, y + size * .52, size * .8);
     }
-    if (state.status === 'won') {
-        roundRect(ox + size * .7, oy + state.height * size * .43, state.width * size - size * 1.4, size * 1.3, 14, 'rgba(11,33,43,.92)', '#b0d8c6');
-        ctx.font = `bold ${Math.min(38, size * .7)}px system-ui`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#bfe7c8';
-        ctx.fillText('规则已改写 · WIN', w / 2, oy + state.height * size * .43 + size * .65);
-    }
 }
 function draw() {
+    const won = state.status === 'won';
+    overlay.hidden = !won;
+    if (won) {
+        victoryTitle.textContent = level === levels_1.puzzles.length - 1 ? '进阶挑战完成！' : '关卡完成！';
+        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步`;
+        nextButton.textContent = level < levels_1.puzzles.length - 1 ? '下一关 →' : '返回关卡列表';
+    }
     titleEl.textContent = levels_1.puzzles[level].title;
     turnEl.textContent = String(state.turn);
     statusEl.textContent = state.status === 'won' ? '已通关' : '进行中';
@@ -713,8 +756,8 @@ function draw() {
     levelEl.replaceChildren();
     levels_1.puzzles.forEach((l, i) => {
         const b = document.createElement('button');
-        b.className = `level-btn ${i === level ? 'selected' : ''}`;
-        b.textContent = String(i + 1).padStart(2, '0');
+        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${completed.has(i) ? 'cleared' : ''}`;
+        b.textContent = `${completed.has(i) ? '✓ ' : ''}${String(i + 1).padStart(2, '0')}`;
         b.title = l.concept;
         b.onclick = () => choose(i);
         levelEl.appendChild(b);
@@ -724,7 +767,11 @@ function draw() {
 window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     const map = { arrowup: 'up', w: 'up', arrowdown: 'down', s: 'down', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
-    if (map[key]) {
+    if (key === 'enter' && state.status === 'won') {
+        e.preventDefault();
+        goNext();
+    }
+    else if (map[key]) {
         e.preventDefault();
         apply(map[key]);
     }
@@ -761,6 +808,15 @@ document.querySelectorAll('[data-action]').forEach(b => b.addEventListener('clic
     else
         apply(action);
 }));
+function goNext() { if (level < levels_1.puzzles.length - 1)
+    choose(level + 1);
+else {
+    overlay.hidden = true;
+    levelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+} }
+nextButton.addEventListener('click', goNext);
+document.querySelector('#replay-level').addEventListener('click', restart);
+document.querySelector('#view-levels').addEventListener('click', () => { overlay.hidden = true; levelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
 let touch = null;
 canvas.addEventListener('touchstart', e => { if (e.touches.length)
     touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });

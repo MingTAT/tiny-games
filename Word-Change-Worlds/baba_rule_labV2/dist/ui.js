@@ -12,8 +12,23 @@ const titleEl = document.querySelector('#level-title');
 const levelEl = document.querySelector('#levels');
 const hintEl = document.querySelector('#hint');
 const traceEl = document.querySelector('#trace');
-let level = 0;
-let state = (0, core_1.clone)(levels_1.puzzles[0].state);
+let level = 7; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let state = (0, core_1.clone)(levels_1.puzzles[level].state);
+const overlay = document.querySelector('#win-overlay');
+const nextButton = document.querySelector('#next-level');
+const victoryTitle = document.querySelector('#victory-title');
+const victoryDetail = document.querySelector('#victory-detail');
+const completed = new Set();
+try {
+    for (const n of JSON.parse(localStorage.getItem('wcw-engine-1.2-completed') || '[]'))
+        if (Number.isInteger(n))
+            completed.add(n);
+}
+catch { /* Browsers may block file:// storage. */ }
+function rememberWin() { completed.add(level); try {
+    localStorage.setItem('wcw-engine-1.2-completed', JSON.stringify([...completed]));
+}
+catch { } }
 let past = [];
 let future = [];
 let lastEvents = [];
@@ -29,6 +44,8 @@ function apply(dir) {
     const result = (0, core_1.step)(state, dir);
     state = result.state;
     lastEvents = result.events.filter(e => e.type !== 'reparse').map(e => `${e.phase} · ${e.type} ${e.detail || ''}`).slice(-7);
+    if (state.status === 'won')
+        rememberWin();
     draw();
 }
 function undo() { if (!past.length)
@@ -165,16 +182,15 @@ function render() {
         ctx.fillStyle = C.ink;
         ctx.fillText(word, x + size * .5, y + size * .52, size * .8);
     }
-    if (state.status === 'won') {
-        roundRect(ox + size * .7, oy + state.height * size * .43, state.width * size - size * 1.4, size * 1.3, 14, 'rgba(11,33,43,.92)', '#b0d8c6');
-        ctx.font = `bold ${Math.min(38, size * .7)}px system-ui`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#bfe7c8';
-        ctx.fillText('规则已改写 · WIN', w / 2, oy + state.height * size * .43 + size * .65);
-    }
 }
 function draw() {
+    const won = state.status === 'won';
+    overlay.hidden = !won;
+    if (won) {
+        victoryTitle.textContent = level === levels_1.puzzles.length - 1 ? '进阶挑战完成！' : '关卡完成！';
+        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步`;
+        nextButton.textContent = level < levels_1.puzzles.length - 1 ? '下一关 →' : '返回关卡列表';
+    }
     titleEl.textContent = levels_1.puzzles[level].title;
     turnEl.textContent = String(state.turn);
     statusEl.textContent = state.status === 'won' ? '已通关' : '进行中';
@@ -193,8 +209,8 @@ function draw() {
     levelEl.replaceChildren();
     levels_1.puzzles.forEach((l, i) => {
         const b = document.createElement('button');
-        b.className = `level-btn ${i === level ? 'selected' : ''}`;
-        b.textContent = String(i + 1).padStart(2, '0');
+        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${completed.has(i) ? 'cleared' : ''}`;
+        b.textContent = `${completed.has(i) ? '✓ ' : ''}${String(i + 1).padStart(2, '0')}`;
         b.title = l.concept;
         b.onclick = () => choose(i);
         levelEl.appendChild(b);
@@ -204,7 +220,11 @@ function draw() {
 window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     const map = { arrowup: 'up', w: 'up', arrowdown: 'down', s: 'down', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
-    if (map[key]) {
+    if (key === 'enter' && state.status === 'won') {
+        e.preventDefault();
+        goNext();
+    }
+    else if (map[key]) {
         e.preventDefault();
         apply(map[key]);
     }
@@ -241,6 +261,15 @@ document.querySelectorAll('[data-action]').forEach(b => b.addEventListener('clic
     else
         apply(action);
 }));
+function goNext() { if (level < levels_1.puzzles.length - 1)
+    choose(level + 1);
+else {
+    overlay.hidden = true;
+    levelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+} }
+nextButton.addEventListener('click', goNext);
+document.querySelector('#replay-level').addEventListener('click', restart);
+document.querySelector('#view-levels').addEventListener('click', () => { overlay.hidden = true; levelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
 let touch = null;
 canvas.addEventListener('touchstart', e => { if (e.touches.length)
     touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });

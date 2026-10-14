@@ -9,17 +9,10 @@ const rules=(...tokens)=>phrase(tokens.join(' '),0,0);
 const get=(s,kind)=>s.entities.filter(x=>x.kind===kind);
 const getWord=(s,word)=>s.entities.filter(x=>x.word===word);
 const actions={R:'right',L:'left',U:'up',D:'down',W:'wait'};
-const plans=[
-'R D D D D U U U U R R R R R R',
-'R R D D D D D D L U R U U U U U',
-'R R D D D D D D L U R U U L',
-'R R R D D D D D L U R R R U U U U R R',
-'L L D D D D D D R R R U R R U U',
-'L R R R D D',
-'U R R R R D D D D'
-];
+const fs=require('node:fs'),path=require('node:path');
 for(let i=0;i<puzzles.length;i++)test(`Full puzzle replay ${i+1}: exact winning step and trace`,()=>{
-  const inputs=plans[i].split(' ').map(x=>actions[x]);const outcome=C.replay(puzzles[i].state,inputs);
+  const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'..','replays',`puzzle-${String(i+1).padStart(2,'0')}.json`),'utf8'));
+  const inputs=fixture.inputs;const outcome=C.replay(puzzles[i].state,inputs);
   assert.equal(outcome.states.length,inputs.length+1);
   assert.equal(outcome.states.at(-2).status,'playing');assert.equal(outcome.states.at(-1).status,'won');
   assert.equal(outcome.states.at(-1).turn,inputs.length);
