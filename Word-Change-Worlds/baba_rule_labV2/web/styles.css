@@ -10,3 +10,12 @@
 .win-actions{display:flex;gap:8px;justify-content:center;margin-top:13px}.win-actions button{flex:1}
 .key-tip{display:block;color:#879f9e;font-size:11px;margin-top:15px}.level-btn.advanced{border-color:#a28555}.level-btn.cleared{color:#c0e7c5}.level-btn.selected{color:#1e3136}.level-btn.advanced.selected{border-color:#ffe2a2}
 @media(max-width:640px){.win-panel{padding:24px 15px}.win-actions button{font-size:12px;padding:10px 8px}.win-overlay{inset:0}}
+
+/* Keep victory navigation fully visible on narrow mobile boards. */
+@media(max-width:640px){
+ .game-area:has(.win-overlay:not([hidden])){min-height:365px}
+ .win-overlay{inset:0;overflow-y:auto}
+ .win-panel{padding:21px 14px}
+ .win-panel .next-level{padding:13px}
+ .key-tip{margin-top:9px}
+}

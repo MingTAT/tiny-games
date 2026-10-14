@@ -75,3 +75,36 @@ puzzles.push(
  [['TEXT',5,4],['IS',6,6],['BABA',7,8],['WIN',11,5]],
  [{kind:'WATER',x:5,y:6}])
 );
+
+// v1.3: two multi-stage locked-room puzzles. The walls form two actual
+// barriers; solutions must change protection, create objects, and unlock them.
+puzzles.push(
+  level('14 — 锁与遗产',
+    '岩石挡住唯一入口，但 SAFE 保护它。解除保护后，消灭岩石会留下钥匙。钥匙和门还会发生什么？',
+    '进阶 · SAFE → EAT/HAS → PUSH/OPEN/SHUT',
+    board(16,13,[['b',3,7],['r',6,7],['d',11,7],['f',13,7]],[6,11]),
+    [
+      ['BABA IS YOU',5,1,'v'],
+      ['BABA EAT ROCK',1,1,'v'],
+      ['ROCK HAS KEY',2,1,'v'],
+      ['ROCK IS STOP',4,1,'v'],
+      ['ROCK IS SAFE',1,5],
+      ['KEY IS PUSH AND OPEN',8,1,'v'],
+      ['DOOR IS SHUT AND STOP',9,1,'v'],
+      ['WALL IS STOP',13,1,'v'],
+      ['FLAG IS WIN',12,10]
+    ]),
+  level('15 — 吃掉一条规则',
+    '先拼成 BABA EAT ROCK；岩石被吃掉会留下什么？把留下的词放到正确位置，你就无需亲自越墙。',
+    '进阶 · 造句 → EAT/HAS TEXT → 远端 YOU',
+    board(14,11,[['b',3,7],['r',5,7],['r',11,6],['f',12,6]],[9]),
+    [
+      ['ROCK HAS TEXT',1,0],
+      ['BABA IS YOU',5,0],
+      ['BABA EAT',1,2],
+      ['ROCK IS STOP',1,10],
+      ['WALL IS STOP',13,8,'v'],
+      ['FLAG IS WIN',10,2]
+    ],
+    [['ROCK',3,3],['IS',6,8],['YOU',7,8]])
+);

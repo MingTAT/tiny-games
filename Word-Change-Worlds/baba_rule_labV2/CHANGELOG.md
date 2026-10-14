@@ -1,31 +1,23 @@
 # Changelog
 
-## v1.2 — Progressive puzzles and win navigation
+## v1.3 — Collision and inheritance puzzles
 
-- 胜利后在棋盘上显示操作弹窗：**下一关**、重玩、选关；Enter 可继续；撤销/重做同步刷新弹窗。
-- 通关的关卡以 ✓ 标记，并在浏览器允许时保存。
-- 01–07 归为教学关，默认从 08 进阶关开始。
-- 增加 08–13 六个进阶谜题：否定冲突 + 重建 WIN、双控制、WORD/PUSH、条件转换、远端变身、三阶段规则链。
-- 每个新增谜题都有完整获胜序列和关键规则断言；新增浏览器 UI 检查脚本。
-- 13 关、72 项自动化测试通过；桌面和手机的真实 UI 检查通过。
-- 仍未达到原作难度、完整语法或结算顺序的一致性。
+- Added `EAT`, `SAFE`, and the base `STILL` property.
+- Collision-before-overlap EAT and OPEN/SHUT resolution; correct HAS spawning location and SAFE protection for overlapping destruction.
+- Transactional cancellation: a blocked PUSH/STOP chain cannot partially consume entities.
+- New 14th and 15th puzzles with required multi-step rule changes (SAFE removal → EAT/HAS → OPEN/SHUT; and sentence construction → EAT/HAS TEXT → remote YOU).
+- Preserved all 13 existing puzzles, replay fixtures, and level navigation.
+- Improved small-screen victory modal clipping and migrated v1.2 completed-level progress.
+- 92 Node tests passing; desktop/mobile browser smoke tests passing. Replays are from this engine, not the original game.
 
+## v1.2
 
-## v1.1 — Object words and literal TEXT
+- Added six advanced puzzle levels (08–13), a success overlay, Next Level, Enter-to-advance, undo/redo synchronization, and per-level completion marks.
 
-- 词语层：新增 `WORD` 属性，真实的名词对象现在能以自己的名字参与横向和纵向组句；`NOT WORD` 可以取消它，且取消后派生语句会消失。
-- 名词变形：`ROCK IS TEXT` 现在生成能参与规则的 `ROCK` 文字，而不是无内容的 TEXT 图标；`TEXT IS ROCK` 恢复成实际 ROCK 对象。
-- 变形边界：`X IS X` 锁定对象，防止其被其他名词变形；`X IS NOT X` 使对象消失。
-- `X HAS TEXT` / `X MAKE TEXT` 创建正确的源名词文字。
-- 增加两关新的机制谜题：实物作为名词组句，以及条件变形创造名词文字。
-- 在 Canvas 中高亮作为文字参与组句的实物。
-- 54 项自动化测试；7 条本地逐步回放；桌面和手机浏览器可运行及操作检查。
+## v1.1
 
-### 仍未达成
-
-没有原作录像或原作关卡逐帧比对数据。此版本不能声称与原作结算顺序、全套属性、关卡难度一致。循环 WORD、高级条件、同步冲突、EMPTY/GROUP/LEVEL、复杂浮层等仍未完成。
+- Added object-as-word, TEXT transformations and negation/identity semantics.
 
 ## v1.0
 
-- 将引擎、关卡和 Canvas 视图拆分为独立 TypeScript 模块。
-- 基础解析、移动与部分交互以及本地重放测试。
+- Isolated the TypeScript rule engine from Canvas rendering and added deterministic replay records.

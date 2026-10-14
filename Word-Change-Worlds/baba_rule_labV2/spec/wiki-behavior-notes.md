@@ -21,3 +21,13 @@
 8. `ROCK HAS TEXT`：ROCK 被删除后生成写有 ROCK 的文字。
 
 仍需人工录制原版输入与输出的部分：语法解析极限、WORD 自引用、复杂的 NOT 和条件、跨阶段 HAS/MAKE 等。测试模板在 `original-conformance-template.json`。
+
+## v1.3 candidate behaviors and verification status
+
+Background references:
+- `https://babaiswiki.fandom.com/wiki/EAT`
+- `https://babaiswiki.fandom.com/wiki/SAFE`
+- `https://babaiswiki.fandom.com/wiki/OPEN`
+- `https://babaiswiki.fandom.com/wiki/HAS`
+
+For this build, the wiki descriptions inform separate tests for EAT-on-enter, SAFE destruction immunity, same-FLOAT targeting, OPEN/SHUT removal on contact, and HAS spawns. These are **candidate tests based on documentation**, not playback observations from the commercial game. Unchecked stacked-object priority and the full official update order remain unverified.

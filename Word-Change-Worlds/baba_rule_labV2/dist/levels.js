@@ -60,3 +60,23 @@ function board(w, h, objects, wallColumns = []) {
     return a.map(row => row.join(''));
 }
 exports.puzzles.push(level('08 — 法律冲突', '墙的 STOP 仍然存在。仅仅推开几块墙无济于事；试着补全另一句相反的规则。', '进阶 · 否定优先级', board(14, 11, [['b', 2, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 1], ['FLAG IS', 9, 3], ['WALL IS NOT', 2, 4]], [['STOP', 5, 7], ['WIN', 11, 6]]), level('09 — 远端施工', '左边建立第二个 YOU，右边再为旗帜建立 WIN。两个身体会一起响应方向键。', '进阶 · 控制权与同步移动', board(14, 11, [['b', 2, 8], ['k', 9, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 0], ['KEKE IS', 2, 4], ['FLAG IS', 9, 2]], [['YOU', 4, 7], ['WIN', 11, 5]]), level('10 — 石头宣言', '岩石可以充当规则文字。先让它成为 WIN，但 PUSH 也意味着你暂时不能踩上去。', '进阶 · WORD × PUSH × WIN', board(14, 11, [['b', 2, 7], ['r', 7, 4]]), [['ROCK IS WORD', 1, 0], ['BABA IS YOU', 7, 0], ['ROCK IS PUSH', 1, 9]], [['IS', 8, 4], ['WIN', 9, 6]]), level('11 — 两次重写', '把水上的石头变成一个可推的 ROCK 文字，让这块文字参与第二条胜利规则；真正的胜利目标是另一块岩石。', '进阶 · 条件变形与规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8]]), [['BABA IS YOU', 8, 0], ['ROCK ON WATER IS', 1, 2]], [['TEXT', 5, 4], ['IS', 6, 6], ['WIN', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('12 — 远端变身', '石头在水中会变成文字。用这块文字组出 ROCK IS BABA，然后想一想谁能够隔墙行动。', '进阶 · 条件变形 × 控制权转移', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS WIN', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('13 — 继承者', '先用条件规则把水中的岩石变成文字，再把另一侧的岩石变成可控制的 BABA。最后别忘了：旗帜目前并不是 WIN。', '大师练习 · 三段规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8], ['WIN', 11, 5]], [{ kind: 'WATER', x: 5, y: 6 }]));
+// v1.3: two multi-stage locked-room puzzles. The walls form two actual
+// barriers; solutions must change protection, create objects, and unlock them.
+exports.puzzles.push(level('14 — 锁与遗产', '岩石挡住唯一入口，但 SAFE 保护它。解除保护后，消灭岩石会留下钥匙。钥匙和门还会发生什么？', '进阶 · SAFE → EAT/HAS → PUSH/OPEN/SHUT', board(16, 13, [['b', 3, 7], ['r', 6, 7], ['d', 11, 7], ['f', 13, 7]], [6, 11]), [
+    ['BABA IS YOU', 5, 1, 'v'],
+    ['BABA EAT ROCK', 1, 1, 'v'],
+    ['ROCK HAS KEY', 2, 1, 'v'],
+    ['ROCK IS STOP', 4, 1, 'v'],
+    ['ROCK IS SAFE', 1, 5],
+    ['KEY IS PUSH AND OPEN', 8, 1, 'v'],
+    ['DOOR IS SHUT AND STOP', 9, 1, 'v'],
+    ['WALL IS STOP', 13, 1, 'v'],
+    ['FLAG IS WIN', 12, 10]
+]), level('15 — 吃掉一条规则', '先拼成 BABA EAT ROCK；岩石被吃掉会留下什么？把留下的词放到正确位置，你就无需亲自越墙。', '进阶 · 造句 → EAT/HAS TEXT → 远端 YOU', board(14, 11, [['b', 3, 7], ['r', 5, 7], ['r', 11, 6], ['f', 12, 6]], [9]), [
+    ['ROCK HAS TEXT', 1, 0],
+    ['BABA IS YOU', 5, 0],
+    ['BABA EAT', 1, 2],
+    ['ROCK IS STOP', 1, 10],
+    ['WALL IS STOP', 13, 8, 'v'],
+    ['FLAG IS WIN', 10, 2]
+], [['ROCK', 3, 3], ['IS', 6, 8], ['YOU', 7, 8]]));

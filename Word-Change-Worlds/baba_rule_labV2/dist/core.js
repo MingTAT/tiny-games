@@ -12,8 +12,8 @@ exports.step = step;
 exports.replay = replay;
 exports.fingerprint = fingerprint;
 exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT']);
-exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD']);
-const ops = new Set(['IS', 'HAS', 'MAKE']);
+exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL']);
+const ops = new Set(['IS', 'HAS', 'MAKE', 'EAT']);
 const connectors = new Set(['AND', 'NOT', 'ON', 'NEAR', 'LONELY']);
 const lexical = new Set([...exports.nouns, ...exports.properties, ...ops, ...connectors]);
 const vectors = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
@@ -196,25 +196,47 @@ function props(s, e, rules) {
 function has(s, e, prop, rules) { return props(s, e, rules).has(prop); }
 function sameLayer(s, a, b, rules) { return has(s, a, 'FLOAT', rules) === has(s, b, 'FLOAT', rules); }
 function nextId(s) { return Math.max(0, ...s.entities.map(e => e.id)) + 1; }
+/**
+ * Transactional movement: inspect every object that must move before changing
+ * any coordinate. EAT and OPEN/SHUT resolve against destination objects as
+ * part of the attempted move rather than waiting for a later overlap.
+ */
 function commitMovement(s, root, dir, rules, events, moved) {
-    if (moved.has(root.id))
+    if (moved.has(root.id) || has(s, root, 'STILL', rules))
         return false;
     const [dx, dy] = vectors[dir];
-    const plan = new Map();
-    const visiting = new Set();
+    const plan = new Map(), visiting = new Set();
+    const eaten = new Set(), unlocked = new Set(), unlockMovers = new Set();
+    const edible = (a, b) => a.id !== b.id && sameLayer(s, a, b, rules) && !has(s, b, 'SAFE', rules) &&
+        rulesFor(s, a, rules).some(r => r.verb === 'EAT' && !r.predicateNegated && r.predicate === b.kind) &&
+        !rulesFor(s, a, rules).some(r => r.verb === 'EAT' && r.predicateNegated && r.predicate === b.kind);
+    const unlocking = (a, b) => a.id !== b.id && sameLayer(s, a, b, rules) &&
+        ((has(s, a, 'OPEN', rules) && has(s, b, 'SHUT', rules)) || (has(s, a, 'SHUT', rules) && has(s, b, 'OPEN', rules))) &&
+        !(has(s, a, 'SAFE', rules) && has(s, b, 'SAFE', rules));
     function traverse(e) {
         if (plan.has(e.id))
             return true;
-        if (visiting.has(e.id))
+        if (visiting.has(e.id) || has(s, e, 'STILL', rules))
             return false;
         const x = e.x + dx, y = e.y + dy;
         if (!inBounds(s, x, y))
             return false;
         visiting.add(e.id);
         for (const other of at(s, x, y)) {
-            if (other.id === e.id)
+            if (other.id === e.id || eaten.has(other.id) || unlocked.has(other.id))
                 continue;
-            // Movement blockers do not require matching FLOAT layers; FLOAT separates interactions, not PUSH/STOP collision.
+            if (unlocking(e, other)) {
+                if (!has(s, e, 'SAFE', rules))
+                    unlockMovers.add(e.id);
+                if (!has(s, other, 'SAFE', rules))
+                    unlocked.add(other.id);
+                // OPEN/SHUT can overcome STOP and PUSH on the counterpart.
+                continue;
+            }
+            if (edible(e, other)) {
+                eaten.add(other.id);
+                continue;
+            }
             if (has(s, other, 'SWAP', rules))
                 continue;
             if (has(s, other, 'PUSH', rules)) {
@@ -223,7 +245,7 @@ function commitMovement(s, root, dir, rules, events, moved) {
                     return false;
                 }
             }
-            else if (has(s, other, 'STOP', rules)) {
+            else if (has(s, other, 'STOP', rules) || has(s, other, 'PULL', rules) || has(s, other, 'STILL', rules)) {
                 visiting.delete(e.id);
                 return false;
             }
@@ -234,14 +256,17 @@ function commitMovement(s, root, dir, rules, events, moved) {
     }
     if (!traverse(root))
         return false;
+    const beforeDeletion = clone(s);
     const original = new Map(s.entities.map(e => [e.id, [e.x, e.y]]));
-    // SWAP can exchange places with objects occupying the destination; no duplicate movement in a transaction.
+    const doomed = new Set([...eaten, ...unlocked, ...unlockMovers]);
+    // A moving OPEN or SHUT is destroyed on contact and does not enter the tile.
+    for (const id of doomed)
+        plan.delete(id);
     const swapped = [];
     for (const id of plan.keys()) {
-        const moving = s.entities.find(e => e.id === id);
         const [x, y] = plan.get(id);
         for (const other of at(s, x, y))
-            if (!plan.has(other.id) && has(s, other, 'SWAP', rules) && !swapped.some(e => e.id === other.id)) {
+            if (!plan.has(other.id) && !doomed.has(other.id) && has(s, other, 'SWAP', rules) && !swapped.some(e => e.id === other.id)) {
                 const [ox, oy] = original.get(id);
                 other.x = ox;
                 other.y = oy;
@@ -258,16 +283,24 @@ function commitMovement(s, root, dir, rules, events, moved) {
     }
     for (const obj of swapped)
         events.push({ phase: 'movement', type: 'swap', ids: [root.id, obj.id] });
-    events.push({ phase: 'movement', type: 'move', ids: [...plan.keys()], detail: dir });
-    // PULL behind each moved object. If pulling fails, the leading movement remains committed.
+    if (plan.size)
+        events.push({ phase: 'movement', type: 'move', ids: [...plan.keys()], detail: dir });
+    if (doomed.size) {
+        const dead = s.entities.filter(e => doomed.has(e.id));
+        s.entities = s.entities.filter(e => !doomed.has(e.id));
+        for (const e of dead)
+            moved.add(e.id);
+        events.push({ phase: 'movement', type: 'collision-destroy', ids: [...doomed] });
+        spawnOnDeleteWithOldState(s, beforeDeletion, dead, rules, events);
+    }
     const pulled = new Set();
     function pull(oldX, oldY, depth) {
         if (depth > s.entities.length)
             return;
         for (const follower of at(s, oldX - dx, oldY - dy)) {
-            if (!has(s, follower, 'PULL', rules) || plan.has(follower.id) || pulled.has(follower.id) || moved.has(follower.id))
+            if (!has(s, follower, 'PULL', rules) || has(s, follower, 'STILL', rules) || plan.has(follower.id) || pulled.has(follower.id) || moved.has(follower.id))
                 continue;
-            const blocking = at(s, oldX, oldY).some(e => e.id !== follower.id && (has(s, e, 'PUSH', rules) || has(s, e, 'STOP', rules)));
+            const blocking = at(s, oldX, oldY).some(e => e.id !== follower.id && (has(s, e, 'PUSH', rules) || has(s, e, 'STOP', rules) || has(s, e, 'STILL', rules)));
             if (blocking)
                 continue;
             pulled.add(follower.id);
@@ -359,32 +392,40 @@ function spawnOnDeleteWithOldState(s, beforeDeletion, deleted, rules, events) {
 }
 function interact(s, events) {
     const rules = parse(s), removed = new Set();
+    const canEat = (a, b) => rulesFor(s, a, rules).some(r => r.verb === 'EAT' && !r.predicateNegated && r.predicate === b.kind) &&
+        !rulesFor(s, a, rules).some(r => r.verb === 'EAT' && r.predicateNegated && r.predicate === b.kind);
     for (let i = 0; i < s.entities.length; i++)
         for (let j = i + 1; j < s.entities.length; j++) {
             const a = s.entities[i], b = s.entities[j];
             if (a.x !== b.x || a.y !== b.y || !sameLayer(s, a, b, rules))
                 continue;
             const aHas = (p) => has(s, a, p, rules), bHas = (p) => has(s, b, p, rules);
+            const mark = (e) => { if (!has(s, e, 'SAFE', rules))
+                removed.add(e.id); };
             if (aHas('SINK') || bHas('SINK')) {
-                removed.add(a.id);
-                removed.add(b.id);
+                mark(a);
+                mark(b);
             }
             if (aHas('DEFEAT') && bHas('YOU'))
-                removed.add(b.id);
+                mark(b);
             if (bHas('DEFEAT') && aHas('YOU'))
-                removed.add(a.id);
+                mark(a);
             if (aHas('HOT') && bHas('MELT'))
-                removed.add(b.id);
+                mark(b);
             if (bHas('HOT') && aHas('MELT'))
-                removed.add(a.id);
+                mark(a);
             if ((aHas('OPEN') && bHas('SHUT')) || (aHas('SHUT') && bHas('OPEN'))) {
-                removed.add(a.id);
-                removed.add(b.id);
+                mark(a);
+                mark(b);
             }
             if (aHas('WEAK'))
-                removed.add(a.id);
+                mark(a);
             if (bHas('WEAK'))
-                removed.add(b.id);
+                mark(b);
+            if (canEat(a, b))
+                mark(b);
+            if (canEat(b, a))
+                mark(a);
         }
     if (removed.size) {
         const beforeDeletion = clone(s);

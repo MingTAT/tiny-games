@@ -17,8 +17,8 @@ exports.step = step;
 exports.replay = replay;
 exports.fingerprint = fingerprint;
 exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT']);
-exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD']);
-const ops = new Set(['IS', 'HAS', 'MAKE']);
+exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL']);
+const ops = new Set(['IS', 'HAS', 'MAKE', 'EAT']);
 const connectors = new Set(['AND', 'NOT', 'ON', 'NEAR', 'LONELY']);
 const lexical = new Set([...exports.nouns, ...exports.properties, ...ops, ...connectors]);
 const vectors = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
@@ -201,25 +201,47 @@ function props(s, e, rules) {
 function has(s, e, prop, rules) { return props(s, e, rules).has(prop); }
 function sameLayer(s, a, b, rules) { return has(s, a, 'FLOAT', rules) === has(s, b, 'FLOAT', rules); }
 function nextId(s) { return Math.max(0, ...s.entities.map(e => e.id)) + 1; }
+/**
+ * Transactional movement: inspect every object that must move before changing
+ * any coordinate. EAT and OPEN/SHUT resolve against destination objects as
+ * part of the attempted move rather than waiting for a later overlap.
+ */
 function commitMovement(s, root, dir, rules, events, moved) {
-    if (moved.has(root.id))
+    if (moved.has(root.id) || has(s, root, 'STILL', rules))
         return false;
     const [dx, dy] = vectors[dir];
-    const plan = new Map();
-    const visiting = new Set();
+    const plan = new Map(), visiting = new Set();
+    const eaten = new Set(), unlocked = new Set(), unlockMovers = new Set();
+    const edible = (a, b) => a.id !== b.id && sameLayer(s, a, b, rules) && !has(s, b, 'SAFE', rules) &&
+        rulesFor(s, a, rules).some(r => r.verb === 'EAT' && !r.predicateNegated && r.predicate === b.kind) &&
+        !rulesFor(s, a, rules).some(r => r.verb === 'EAT' && r.predicateNegated && r.predicate === b.kind);
+    const unlocking = (a, b) => a.id !== b.id && sameLayer(s, a, b, rules) &&
+        ((has(s, a, 'OPEN', rules) && has(s, b, 'SHUT', rules)) || (has(s, a, 'SHUT', rules) && has(s, b, 'OPEN', rules))) &&
+        !(has(s, a, 'SAFE', rules) && has(s, b, 'SAFE', rules));
     function traverse(e) {
         if (plan.has(e.id))
             return true;
-        if (visiting.has(e.id))
+        if (visiting.has(e.id) || has(s, e, 'STILL', rules))
             return false;
         const x = e.x + dx, y = e.y + dy;
         if (!inBounds(s, x, y))
             return false;
         visiting.add(e.id);
         for (const other of at(s, x, y)) {
-            if (other.id === e.id)
+            if (other.id === e.id || eaten.has(other.id) || unlocked.has(other.id))
                 continue;
-            // Movement blockers do not require matching FLOAT layers; FLOAT separates interactions, not PUSH/STOP collision.
+            if (unlocking(e, other)) {
+                if (!has(s, e, 'SAFE', rules))
+                    unlockMovers.add(e.id);
+                if (!has(s, other, 'SAFE', rules))
+                    unlocked.add(other.id);
+                // OPEN/SHUT can overcome STOP and PUSH on the counterpart.
+                continue;
+            }
+            if (edible(e, other)) {
+                eaten.add(other.id);
+                continue;
+            }
             if (has(s, other, 'SWAP', rules))
                 continue;
             if (has(s, other, 'PUSH', rules)) {
@@ -228,7 +250,7 @@ function commitMovement(s, root, dir, rules, events, moved) {
                     return false;
                 }
             }
-            else if (has(s, other, 'STOP', rules)) {
+            else if (has(s, other, 'STOP', rules) || has(s, other, 'PULL', rules) || has(s, other, 'STILL', rules)) {
                 visiting.delete(e.id);
                 return false;
             }
@@ -239,14 +261,17 @@ function commitMovement(s, root, dir, rules, events, moved) {
     }
     if (!traverse(root))
         return false;
+    const beforeDeletion = clone(s);
     const original = new Map(s.entities.map(e => [e.id, [e.x, e.y]]));
-    // SWAP can exchange places with objects occupying the destination; no duplicate movement in a transaction.
+    const doomed = new Set([...eaten, ...unlocked, ...unlockMovers]);
+    // A moving OPEN or SHUT is destroyed on contact and does not enter the tile.
+    for (const id of doomed)
+        plan.delete(id);
     const swapped = [];
     for (const id of plan.keys()) {
-        const moving = s.entities.find(e => e.id === id);
         const [x, y] = plan.get(id);
         for (const other of at(s, x, y))
-            if (!plan.has(other.id) && has(s, other, 'SWAP', rules) && !swapped.some(e => e.id === other.id)) {
+            if (!plan.has(other.id) && !doomed.has(other.id) && has(s, other, 'SWAP', rules) && !swapped.some(e => e.id === other.id)) {
                 const [ox, oy] = original.get(id);
                 other.x = ox;
                 other.y = oy;
@@ -263,16 +288,24 @@ function commitMovement(s, root, dir, rules, events, moved) {
     }
     for (const obj of swapped)
         events.push({ phase: 'movement', type: 'swap', ids: [root.id, obj.id] });
-    events.push({ phase: 'movement', type: 'move', ids: [...plan.keys()], detail: dir });
-    // PULL behind each moved object. If pulling fails, the leading movement remains committed.
+    if (plan.size)
+        events.push({ phase: 'movement', type: 'move', ids: [...plan.keys()], detail: dir });
+    if (doomed.size) {
+        const dead = s.entities.filter(e => doomed.has(e.id));
+        s.entities = s.entities.filter(e => !doomed.has(e.id));
+        for (const e of dead)
+            moved.add(e.id);
+        events.push({ phase: 'movement', type: 'collision-destroy', ids: [...doomed] });
+        spawnOnDeleteWithOldState(s, beforeDeletion, dead, rules, events);
+    }
     const pulled = new Set();
     function pull(oldX, oldY, depth) {
         if (depth > s.entities.length)
             return;
         for (const follower of at(s, oldX - dx, oldY - dy)) {
-            if (!has(s, follower, 'PULL', rules) || plan.has(follower.id) || pulled.has(follower.id) || moved.has(follower.id))
+            if (!has(s, follower, 'PULL', rules) || has(s, follower, 'STILL', rules) || plan.has(follower.id) || pulled.has(follower.id) || moved.has(follower.id))
                 continue;
-            const blocking = at(s, oldX, oldY).some(e => e.id !== follower.id && (has(s, e, 'PUSH', rules) || has(s, e, 'STOP', rules)));
+            const blocking = at(s, oldX, oldY).some(e => e.id !== follower.id && (has(s, e, 'PUSH', rules) || has(s, e, 'STOP', rules) || has(s, e, 'STILL', rules)));
             if (blocking)
                 continue;
             pulled.add(follower.id);
@@ -364,32 +397,40 @@ function spawnOnDeleteWithOldState(s, beforeDeletion, deleted, rules, events) {
 }
 function interact(s, events) {
     const rules = parse(s), removed = new Set();
+    const canEat = (a, b) => rulesFor(s, a, rules).some(r => r.verb === 'EAT' && !r.predicateNegated && r.predicate === b.kind) &&
+        !rulesFor(s, a, rules).some(r => r.verb === 'EAT' && r.predicateNegated && r.predicate === b.kind);
     for (let i = 0; i < s.entities.length; i++)
         for (let j = i + 1; j < s.entities.length; j++) {
             const a = s.entities[i], b = s.entities[j];
             if (a.x !== b.x || a.y !== b.y || !sameLayer(s, a, b, rules))
                 continue;
             const aHas = (p) => has(s, a, p, rules), bHas = (p) => has(s, b, p, rules);
+            const mark = (e) => { if (!has(s, e, 'SAFE', rules))
+                removed.add(e.id); };
             if (aHas('SINK') || bHas('SINK')) {
-                removed.add(a.id);
-                removed.add(b.id);
+                mark(a);
+                mark(b);
             }
             if (aHas('DEFEAT') && bHas('YOU'))
-                removed.add(b.id);
+                mark(b);
             if (bHas('DEFEAT') && aHas('YOU'))
-                removed.add(a.id);
+                mark(a);
             if (aHas('HOT') && bHas('MELT'))
-                removed.add(b.id);
+                mark(b);
             if (bHas('HOT') && aHas('MELT'))
-                removed.add(a.id);
+                mark(a);
             if ((aHas('OPEN') && bHas('SHUT')) || (aHas('SHUT') && bHas('OPEN'))) {
-                removed.add(a.id);
-                removed.add(b.id);
+                mark(a);
+                mark(b);
             }
             if (aHas('WEAK'))
-                removed.add(a.id);
+                mark(a);
             if (bHas('WEAK'))
-                removed.add(b.id);
+                mark(b);
+            if (canEat(a, b))
+                mark(b);
+            if (canEat(b, a))
+                mark(a);
         }
     if (removed.size) {
         const beforeDeletion = clone(s);
@@ -527,6 +568,26 @@ function board(w, h, objects, wallColumns = []) {
     return a.map(row => row.join(''));
 }
 exports.puzzles.push(level('08 — 法律冲突', '墙的 STOP 仍然存在。仅仅推开几块墙无济于事；试着补全另一句相反的规则。', '进阶 · 否定优先级', board(14, 11, [['b', 2, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 1], ['FLAG IS', 9, 3], ['WALL IS NOT', 2, 4]], [['STOP', 5, 7], ['WIN', 11, 6]]), level('09 — 远端施工', '左边建立第二个 YOU，右边再为旗帜建立 WIN。两个身体会一起响应方向键。', '进阶 · 控制权与同步移动', board(14, 11, [['b', 2, 8], ['k', 9, 8], ['f', 12, 8]], [7]), [['BABA IS YOU', 1, 0], ['WALL IS STOP', 9, 0], ['KEKE IS', 2, 4], ['FLAG IS', 9, 2]], [['YOU', 4, 7], ['WIN', 11, 5]]), level('10 — 石头宣言', '岩石可以充当规则文字。先让它成为 WIN，但 PUSH 也意味着你暂时不能踩上去。', '进阶 · WORD × PUSH × WIN', board(14, 11, [['b', 2, 7], ['r', 7, 4]]), [['ROCK IS WORD', 1, 0], ['BABA IS YOU', 7, 0], ['ROCK IS PUSH', 1, 9]], [['IS', 8, 4], ['WIN', 9, 6]]), level('11 — 两次重写', '把水上的石头变成一个可推的 ROCK 文字，让这块文字参与第二条胜利规则；真正的胜利目标是另一块岩石。', '进阶 · 条件变形与规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8]]), [['BABA IS YOU', 8, 0], ['ROCK ON WATER IS', 1, 2]], [['TEXT', 5, 4], ['IS', 6, 6], ['WIN', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('12 — 远端变身', '石头在水中会变成文字。用这块文字组出 ROCK IS BABA，然后想一想谁能够隔墙行动。', '进阶 · 条件变形 × 控制权转移', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS WIN', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8]], [{ kind: 'WATER', x: 5, y: 6 }]), level('13 — 继承者', '先用条件规则把水中的岩石变成文字，再把另一侧的岩石变成可控制的 BABA。最后别忘了：旗帜目前并不是 WIN。', '大师练习 · 三段规则链', board(14, 11, [['b', 3, 7], ['r', 5, 6], ['r', 11, 8], ['f', 12, 8]], [8]), [['BABA IS YOU', 9, 0], ['ROCK ON WATER IS', 1, 2], ['WALL IS STOP', 9, 2], ['FLAG IS', 9, 3]], [['TEXT', 5, 4], ['IS', 6, 6], ['BABA', 7, 8], ['WIN', 11, 5]], [{ kind: 'WATER', x: 5, y: 6 }]));
+// v1.3: two multi-stage locked-room puzzles. The walls form two actual
+// barriers; solutions must change protection, create objects, and unlock them.
+exports.puzzles.push(level('14 — 锁与遗产', '岩石挡住唯一入口，但 SAFE 保护它。解除保护后，消灭岩石会留下钥匙。钥匙和门还会发生什么？', '进阶 · SAFE → EAT/HAS → PUSH/OPEN/SHUT', board(16, 13, [['b', 3, 7], ['r', 6, 7], ['d', 11, 7], ['f', 13, 7]], [6, 11]), [
+    ['BABA IS YOU', 5, 1, 'v'],
+    ['BABA EAT ROCK', 1, 1, 'v'],
+    ['ROCK HAS KEY', 2, 1, 'v'],
+    ['ROCK IS STOP', 4, 1, 'v'],
+    ['ROCK IS SAFE', 1, 5],
+    ['KEY IS PUSH AND OPEN', 8, 1, 'v'],
+    ['DOOR IS SHUT AND STOP', 9, 1, 'v'],
+    ['WALL IS STOP', 13, 1, 'v'],
+    ['FLAG IS WIN', 12, 10]
+]), level('15 — 吃掉一条规则', '先拼成 BABA EAT ROCK；岩石被吃掉会留下什么？把留下的词放到正确位置，你就无需亲自越墙。', '进阶 · 造句 → EAT/HAS TEXT → 远端 YOU', board(14, 11, [['b', 3, 7], ['r', 5, 7], ['r', 11, 6], ['f', 12, 6]], [9]), [
+    ['ROCK HAS TEXT', 1, 0],
+    ['BABA IS YOU', 5, 0],
+    ['BABA EAT', 1, 2],
+    ['ROCK IS STOP', 1, 10],
+    ['WALL IS STOP', 13, 8, 'v'],
+    ['FLAG IS WIN', 10, 2]
+], [['ROCK', 3, 3], ['IS', 6, 8], ['YOU', 7, 8]]));
 
 };
 modules["ui"]=function(module,exports,require){
@@ -544,7 +605,7 @@ const titleEl = document.querySelector('#level-title');
 const levelEl = document.querySelector('#levels');
 const hintEl = document.querySelector('#hint');
 const traceEl = document.querySelector('#trace');
-let level = 7; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let level = 13; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
 let state = (0, core_1.clone)(levels_1.puzzles[level].state);
 const overlay = document.querySelector('#win-overlay');
 const nextButton = document.querySelector('#next-level');
@@ -552,13 +613,14 @@ const victoryTitle = document.querySelector('#victory-title');
 const victoryDetail = document.querySelector('#victory-detail');
 const completed = new Set();
 try {
-    for (const n of JSON.parse(localStorage.getItem('wcw-engine-1.2-completed') || '[]'))
-        if (Number.isInteger(n))
-            completed.add(n);
+    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed'])
+        for (const n of JSON.parse(localStorage.getItem(key) || '[]'))
+            if (Number.isInteger(n))
+                completed.add(n);
 }
 catch { /* Browsers may block file:// storage. */ }
 function rememberWin() { completed.add(level); try {
-    localStorage.setItem('wcw-engine-1.2-completed', JSON.stringify([...completed]));
+    localStorage.setItem('wcw-engine-1.3-completed', JSON.stringify([...completed]));
 }
 catch { } }
 let past = [];

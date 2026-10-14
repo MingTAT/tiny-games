@@ -11,15 +11,15 @@ const titleEl=document.querySelector<HTMLElement>('#level-title')!;
 const levelEl=document.querySelector<HTMLElement>('#levels')!;
 const hintEl=document.querySelector<HTMLElement>('#hint')!;
 const traceEl=document.querySelector<HTMLElement>('#trace')!;
-let level=7; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let level=13; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
 let state:State=clone(puzzles[level].state);
 const overlay=document.querySelector<HTMLElement>('#win-overlay')!;
 const nextButton=document.querySelector<HTMLButtonElement>('#next-level')!;
 const victoryTitle=document.querySelector<HTMLElement>('#victory-title')!;
 const victoryDetail=document.querySelector<HTMLElement>('#victory-detail')!;
 const completed=new Set<number>();
-try { for(const n of JSON.parse(localStorage.getItem('wcw-engine-1.2-completed')||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
-function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.2-completed',JSON.stringify([...completed]));}catch{}}
+try { for(const key of ['wcw-engine-1.2-completed','wcw-engine-1.3-completed']) for(const n of JSON.parse(localStorage.getItem(key)||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
+function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.3-completed',JSON.stringify([...completed]));}catch{}}
 let past:State[]=[];
 let future:State[]=[];
 let lastEvents:string[]=[];
