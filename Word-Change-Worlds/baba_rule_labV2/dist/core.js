@@ -11,8 +11,8 @@ exports.has = has;
 exports.step = step;
 exports.replay = replay;
 exports.fingerprint = fingerprint;
-exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT']);
-exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL']);
+exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT', 'GROUP']);
+exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL', 'GROUP']);
 const ops = new Set(['IS', 'HAS', 'MAKE', 'EAT']);
 const connectors = new Set(['AND', 'NOT', 'ON', 'NEAR', 'LONELY']);
 const lexical = new Set([...exports.nouns, ...exports.properties, ...ops, ...connectors]);
@@ -168,8 +168,17 @@ function parse(state) {
     }
     return rules;
 }
-function matchesSubject(e, r) {
-    const match = e.kind === r.subject;
+/** GROUP is a derived set, not an entity. Direct membership is decided by
+ * noun IS GROUP (including conditional membership); a negated membership
+ * removes the positive membership. Recursive group-membership rules are
+ * deliberately not supported in this first, explicitly bounded version. */
+function belongsToGroup(s, e, rules) {
+    const memberships = rules.filter(r => r.verb === 'IS' && r.predicate === 'GROUP' && r.subject !== 'GROUP'
+        && (r.subjectNegated ? e.kind !== r.subject : e.kind === r.subject) && conditionMatches(s, e, r));
+    return memberships.some(r => !r.predicateNegated) && !memberships.some(r => r.predicateNegated);
+}
+function matchesSubject(s, e, r, rules) {
+    const match = r.subject === 'GROUP' ? belongsToGroup(s, e, rules) : e.kind === r.subject;
     return r.subjectNegated ? !match : match;
 }
 function conditionMatches(s, e, r) {
@@ -182,7 +191,7 @@ function conditionMatches(s, e, r) {
     });
 }
 function rulesFor(s, e, rules) {
-    return rules.filter(r => matchesSubject(e, r) && conditionMatches(s, e, r));
+    return rules.filter(r => matchesSubject(s, e, r, rules) && conditionMatches(s, e, r));
 }
 function props(s, e, rules) {
     const rr = rulesFor(s, e, rules).filter(r => r.verb === 'IS' && exports.properties.has(r.predicate));
@@ -364,7 +373,7 @@ function transform(s, events) {
             events.push({ phase: 'transform', type: 'vanish', ids: [e.id], detail: `${e.kind} IS NOT ${e.kind}` });
             continue;
         }
-        const positive = protectedSelf ? [] : [...new Set(matches.filter(r => !r.predicateNegated && r.predicate !== e.kind && !denied.has(r.predicate)).map(r => r.predicate))];
+        const positive = protectedSelf ? [] : [...new Set(matches.filter(r => !r.predicateNegated && r.predicate !== 'GROUP' && r.predicate !== e.kind && !denied.has(r.predicate)).map(r => r.predicate))];
         if (!positive.length) {
             output.push(e);
             continue;

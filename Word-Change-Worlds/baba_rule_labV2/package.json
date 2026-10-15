@@ -1,6 +1,6 @@
 {
   "name": "words-change-worlds-engine",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "Rule-driven grid puzzle prototype with deterministic TypeScript core",
   "scripts": {

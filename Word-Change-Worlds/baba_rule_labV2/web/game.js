@@ -16,8 +16,8 @@ exports.has = has;
 exports.step = step;
 exports.replay = replay;
 exports.fingerprint = fingerprint;
-exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT']);
-exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL']);
+exports.nouns = new Set(['BABA', 'KEKE', 'ROCK', 'FLAG', 'WALL', 'WATER', 'SKULL', 'KEY', 'DOOR', 'GRASS', 'LOVE', 'TEXT', 'GROUP']);
+exports.properties = new Set(['YOU', 'WIN', 'STOP', 'PUSH', 'PULL', 'SINK', 'DEFEAT', 'HOT', 'MELT', 'OPEN', 'SHUT', 'WEAK', 'FLOAT', 'MOVE', 'SHIFT', 'SWAP', 'WORD', 'SAFE', 'STILL', 'GROUP']);
 const ops = new Set(['IS', 'HAS', 'MAKE', 'EAT']);
 const connectors = new Set(['AND', 'NOT', 'ON', 'NEAR', 'LONELY']);
 const lexical = new Set([...exports.nouns, ...exports.properties, ...ops, ...connectors]);
@@ -173,8 +173,17 @@ function parse(state) {
     }
     return rules;
 }
-function matchesSubject(e, r) {
-    const match = e.kind === r.subject;
+/** GROUP is a derived set, not an entity. Direct membership is decided by
+ * noun IS GROUP (including conditional membership); a negated membership
+ * removes the positive membership. Recursive group-membership rules are
+ * deliberately not supported in this first, explicitly bounded version. */
+function belongsToGroup(s, e, rules) {
+    const memberships = rules.filter(r => r.verb === 'IS' && r.predicate === 'GROUP' && r.subject !== 'GROUP'
+        && (r.subjectNegated ? e.kind !== r.subject : e.kind === r.subject) && conditionMatches(s, e, r));
+    return memberships.some(r => !r.predicateNegated) && !memberships.some(r => r.predicateNegated);
+}
+function matchesSubject(s, e, r, rules) {
+    const match = r.subject === 'GROUP' ? belongsToGroup(s, e, rules) : e.kind === r.subject;
     return r.subjectNegated ? !match : match;
 }
 function conditionMatches(s, e, r) {
@@ -187,7 +196,7 @@ function conditionMatches(s, e, r) {
     });
 }
 function rulesFor(s, e, rules) {
-    return rules.filter(r => matchesSubject(e, r) && conditionMatches(s, e, r));
+    return rules.filter(r => matchesSubject(s, e, r, rules) && conditionMatches(s, e, r));
 }
 function props(s, e, rules) {
     const rr = rulesFor(s, e, rules).filter(r => r.verb === 'IS' && exports.properties.has(r.predicate));
@@ -369,7 +378,7 @@ function transform(s, events) {
             events.push({ phase: 'transform', type: 'vanish', ids: [e.id], detail: `${e.kind} IS NOT ${e.kind}` });
             continue;
         }
-        const positive = protectedSelf ? [] : [...new Set(matches.filter(r => !r.predicateNegated && r.predicate !== e.kind && !denied.has(r.predicate)).map(r => r.predicate))];
+        const positive = protectedSelf ? [] : [...new Set(matches.filter(r => !r.predicateNegated && r.predicate !== 'GROUP' && r.predicate !== e.kind && !denied.has(r.predicate)).map(r => r.predicate))];
         if (!positive.length) {
             output.push(e);
             continue;
@@ -588,6 +597,66 @@ exports.puzzles.push(level('14 — 锁与遗产', '岩石挡住唯一入口，�
     ['WALL IS STOP', 13, 8, 'v'],
     ['FLAG IS WIN', 10, 2]
 ], [['ROCK', 3, 3], ['IS', 6, 8], ['YOU', 7, 8]]));
+// A chamber is separated by an actual locked threshold. GROUP is not a pickup:
+// the puzzle asks which objects should be members *at the moment* of unlocking.
+exports.puzzles.push(level('16 — 谁来开门', '想一想：GROUP 是一种身份，还是一个物体？所有成员都会付出相同的代价吗？', '实验关 · GROUP 的共享属性与物理空间', [
+    '............',
+    '############',
+    '#.....#....#',
+    '#..b..#....#',
+    '#.....d..f.#',
+    '#...r.#....#',
+    '#.....#....#',
+    '#.....#....#',
+    '#.....#....#',
+    '############',
+    '............'
+], [
+    ['BABA IS YOU', 0, 0], ['GROUP IS OPEN', 4, 0], ['WALL IS STOP', 8, 0],
+    ['ROCK IS PUSH', 0, 10], ['DOOR IS SHUT', 4, 10], ['FLAG IS WIN', 8, 10],
+    ['DOOR IS STOP', 10, 5, 'v'],
+    ['BABA IS GROUP', 1, 2], ['ROCK IS', 1, 6]
+], [['GROUP', 3, 7]]));
+// The order is the puzzle: the winning object must first be pushed ON WATER,
+// then the same PUSH property must be negated without cancelling the win.
+exports.puzzles.push(level('17 — 太早的答案', '完成一条规则不等于应该立即完成。观察石头必须先到达哪里。', '实验关 · 条件 GROUP 与时序反转', [
+    '................',
+    '################',
+    '#..............#',
+    '#..b...........#',
+    '#..r....###....#',
+    '#..........#...#',
+    '#....#.........#',
+    '#..............#',
+    '#..w...........#',
+    '#..............#',
+    '################',
+    '................'
+], [
+    ['BABA IS YOU', 0, 0], ['WALL IS STOP', 4, 0], ['ROCK IS PUSH', 9, 0],
+    ['ROCK ON WATER IS GROUP', 0, 11], ['GROUP IS WIN', 7, 11],
+    ['ROCK IS NOT', 6, 7]
+], [['PUSH', 9, 8]]));
+// A moving object remains in GROUP only while standing ON WATER. It can create
+// its own WATER underneath with MAKE, thus carrying its control condition.
+// The two phrases can be assembled in either order; neither alone wins.
+exports.puzzles.push(level('18 — 脚下的河', '你能为它创造脚下的路。但你自己的移动，也可能破坏远处的控制权。', '核心谜题 · 条件成员身份 × MAKE × 持续控制', [
+    '................',
+    '################',
+    '#......#########',
+    '#......######f##',
+    '#......####.#.##',
+    '#......####...##',
+    '#......####.####',
+    '#......###r.####',
+    '#..b...#########',
+    '################',
+    '................'
+], [
+    ['BABA IS YOU', 0, 0], ['ROCK ON WATER IS GROUP', 8, 0],
+    ['FLAG IS WIN', 0, 10], ['WALL IS STOP', 4, 10],
+    ['GROUP IS', 4, 3], ['ROCK MAKE', 1, 5]
+], [['YOU', 6, 4], ['WATER', 3, 6]], [{ kind: 'WATER', x: 10, y: 7 }]));
 
 };
 modules["ui"]=function(module,exports,require){
@@ -605,7 +674,7 @@ const titleEl = document.querySelector('#level-title');
 const levelEl = document.querySelector('#levels');
 const hintEl = document.querySelector('#hint');
 const traceEl = document.querySelector('#trace');
-let level = 13; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let level = 15; // Open the new mechanics-led challenge set, not the legacy demos.
 let state = (0, core_1.clone)(levels_1.puzzles[level].state);
 const overlay = document.querySelector('#win-overlay');
 const nextButton = document.querySelector('#next-level');
@@ -613,14 +682,14 @@ const victoryTitle = document.querySelector('#victory-title');
 const victoryDetail = document.querySelector('#victory-detail');
 const completed = new Set();
 try {
-    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed'])
+    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed', 'wcw-engine-1.4-completed'])
         for (const n of JSON.parse(localStorage.getItem(key) || '[]'))
             if (Number.isInteger(n))
                 completed.add(n);
 }
 catch { /* Browsers may block file:// storage. */ }
 function rememberWin() { completed.add(level); try {
-    localStorage.setItem('wcw-engine-1.3-completed', JSON.stringify([...completed]));
+    localStorage.setItem('wcw-engine-1.4-completed', JSON.stringify([...completed]));
 }
 catch { } }
 let past = [];
@@ -782,7 +851,7 @@ function draw() {
     overlay.hidden = !won;
     if (won) {
         victoryTitle.textContent = level === levels_1.puzzles.length - 1 ? '进阶挑战完成！' : '关卡完成！';
-        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步`;
+        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步 · ${levels_1.puzzles[level].concept}`;
         nextButton.textContent = level < levels_1.puzzles.length - 1 ? '下一关 →' : '返回关卡列表';
     }
     titleEl.textContent = levels_1.puzzles[level].title;
@@ -803,7 +872,7 @@ function draw() {
     levelEl.replaceChildren();
     levels_1.puzzles.forEach((l, i) => {
         const b = document.createElement('button');
-        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${completed.has(i) ? 'cleared' : ''}`;
+        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${i >= 15 ? 'challenge' : ''} ${completed.has(i) ? 'cleared' : ''}`;
         b.textContent = `${completed.has(i) ? '✓ ' : ''}${String(i + 1).padStart(2, '0')}`;
         b.title = l.concept;
         b.onclick = () => choose(i);

@@ -12,7 +12,7 @@ const titleEl = document.querySelector('#level-title');
 const levelEl = document.querySelector('#levels');
 const hintEl = document.querySelector('#hint');
 const traceEl = document.querySelector('#trace');
-let level = 13; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let level = 15; // Open the new mechanics-led challenge set, not the legacy demos.
 let state = (0, core_1.clone)(levels_1.puzzles[level].state);
 const overlay = document.querySelector('#win-overlay');
 const nextButton = document.querySelector('#next-level');
@@ -20,14 +20,14 @@ const victoryTitle = document.querySelector('#victory-title');
 const victoryDetail = document.querySelector('#victory-detail');
 const completed = new Set();
 try {
-    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed'])
+    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed', 'wcw-engine-1.4-completed'])
         for (const n of JSON.parse(localStorage.getItem(key) || '[]'))
             if (Number.isInteger(n))
                 completed.add(n);
 }
 catch { /* Browsers may block file:// storage. */ }
 function rememberWin() { completed.add(level); try {
-    localStorage.setItem('wcw-engine-1.3-completed', JSON.stringify([...completed]));
+    localStorage.setItem('wcw-engine-1.4-completed', JSON.stringify([...completed]));
 }
 catch { } }
 let past = [];
@@ -189,7 +189,7 @@ function draw() {
     overlay.hidden = !won;
     if (won) {
         victoryTitle.textContent = level === levels_1.puzzles.length - 1 ? '进阶挑战完成！' : '关卡完成！';
-        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步`;
+        victoryDetail.textContent = `${levels_1.puzzles[level].title} · ${state.turn} 步 · ${levels_1.puzzles[level].concept}`;
         nextButton.textContent = level < levels_1.puzzles.length - 1 ? '下一关 →' : '返回关卡列表';
     }
     titleEl.textContent = levels_1.puzzles[level].title;
@@ -210,7 +210,7 @@ function draw() {
     levelEl.replaceChildren();
     levels_1.puzzles.forEach((l, i) => {
         const b = document.createElement('button');
-        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${completed.has(i) ? 'cleared' : ''}`;
+        b.className = `level-btn ${i === level ? 'selected' : ''} ${i >= 7 ? 'advanced' : ''} ${i >= 15 ? 'challenge' : ''} ${completed.has(i) ? 'cleared' : ''}`;
         b.textContent = `${completed.has(i) ? '✓ ' : ''}${String(i + 1).padStart(2, '0')}`;
         b.title = l.concept;
         b.onclick = () => choose(i);

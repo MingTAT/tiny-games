@@ -11,8 +11,8 @@ export type State = {width:number;height:number;entities:Entity[];turn:number;st
 export type Rule = {subject:string;subjectNegated:boolean;verb:Verb;predicate:string;predicateNegated:boolean;conditions:Condition[];wordIds:number[]};
 export type Event = {phase:string;type:string;ids?:number[];detail?:string};
 export type Result = {state:State;events:Event[];rules:Rule[]};
-export const nouns = new Set(['BABA','KEKE','ROCK','FLAG','WALL','WATER','SKULL','KEY','DOOR','GRASS','LOVE','TEXT']);
-export const properties = new Set(['YOU','WIN','STOP','PUSH','PULL','SINK','DEFEAT','HOT','MELT','OPEN','SHUT','WEAK','FLOAT','MOVE','SHIFT','SWAP','WORD','SAFE','STILL']);
+export const nouns = new Set(['BABA','KEKE','ROCK','FLAG','WALL','WATER','SKULL','KEY','DOOR','GRASS','LOVE','TEXT','GROUP']);
+export const properties = new Set(['YOU','WIN','STOP','PUSH','PULL','SINK','DEFEAT','HOT','MELT','OPEN','SHUT','WEAK','FLOAT','MOVE','SHIFT','SWAP','WORD','SAFE','STILL','GROUP']);
 const ops = new Set(['IS','HAS','MAKE','EAT']);
 const connectors = new Set(['AND','NOT','ON','NEAR','LONELY']);
 const lexical = new Set([...nouns,...properties,...ops,...connectors]);
@@ -124,8 +124,17 @@ export function parse(state:State):Rule[] {
   }
   return rules;
 }
-function matchesSubject(e:Entity,r:Rule):boolean {
-  const match = e.kind===r.subject;
+/** GROUP is a derived set, not an entity. Direct membership is decided by
+ * noun IS GROUP (including conditional membership); a negated membership
+ * removes the positive membership. Recursive group-membership rules are
+ * deliberately not supported in this first, explicitly bounded version. */
+function belongsToGroup(s:State,e:Entity,rules:Rule[]):boolean {
+  const memberships=rules.filter(r=>r.verb==='IS' && r.predicate==='GROUP' && r.subject!=='GROUP'
+    && (r.subjectNegated ? e.kind!==r.subject : e.kind===r.subject) && conditionMatches(s,e,r));
+  return memberships.some(r=>!r.predicateNegated) && !memberships.some(r=>r.predicateNegated);
+}
+function matchesSubject(s:State,e:Entity,r:Rule,rules:Rule[]):boolean {
+  const match = r.subject==='GROUP' ? belongsToGroup(s,e,rules) : e.kind===r.subject;
   return r.subjectNegated?!match:match;
 }
 function conditionMatches(s:State,e:Entity,r:Rule):boolean{
@@ -137,7 +146,7 @@ function conditionMatches(s:State,e:Entity,r:Rule):boolean{
   });
 }
 export function rulesFor(s:State,e:Entity,rules:Rule[]):Rule[]{
-  return rules.filter(r=>matchesSubject(e,r)&&conditionMatches(s,e,r));
+  return rules.filter(r=>matchesSubject(s,e,r,rules)&&conditionMatches(s,e,r));
 }
 export function props(s:State,e:Entity,rules:Rule[]):Set<string>{
   const rr=rulesFor(s,e,rules).filter(r=>r.verb==='IS'&&properties.has(r.predicate));
@@ -263,7 +272,7 @@ function transform(s:State,events:Event[]):void{
       events.push({phase:'transform',type:'vanish',ids:[e.id],detail:`${e.kind} IS NOT ${e.kind}`});
       continue;
     }
-    const positive=protectedSelf?[]:[...new Set(matches.filter(r=>!r.predicateNegated&&r.predicate!==e.kind&&!denied.has(r.predicate)).map(r=>r.predicate))];
+    const positive=protectedSelf?[]:[...new Set(matches.filter(r=>!r.predicateNegated&&r.predicate!=='GROUP'&&r.predicate!==e.kind&&!denied.has(r.predicate)).map(r=>r.predicate))];
     if(!positive.length){output.push(e);continue;}
     for(const kind of positive){
       const unit=nounUnit(e,kind,id++);output.push(unit);

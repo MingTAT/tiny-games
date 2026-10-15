@@ -1,0 +1,5 @@
+const {puzzles}=require('../dist/levels');const {step,parse,has}=require('../dist/core');
+const n=Number(process.argv[2]||16),moves=(process.argv[3]||'').split('').filter(x=>'UDLRW'.includes(x));const map={U:'up',D:'down',L:'left',R:'right',W:'wait'};
+let s=puzzles[n-1].state;const show=(s)=>{console.log('\nTurn '+s.turn+' '+s.status);for(let y=0;y<s.height;y++){let a=[];for(let x=0;x<s.width;x++){let es=s.entities.filter(e=>e.x===x&&e.y===y);a.push(es.length?es.filter(e=>e.kind==='TEXT').map(e=>e.word[0]).join('')||es.map(e=>e.kind[0].toLowerCase()).join('') :'.');}console.log(a.map(e=>e.length>1?'*':e).join(''));} console.log([...new Set(parse(s).map(r=>r.subject+' '+r.verb+' '+r.predicate))].join(' | '));};show(s);
+for(const m of moves){let r=step(s,map[m]);s=r.state;console.log(m,s.turn,'Baba:',s.entities.filter(e=>e.kind==='BABA').map(e=>[e.x,e.y]),'rock:',s.entities.filter(e=>e.kind==='ROCK').map(e=>[e.x,e.y]),'events',r.events.filter(e=>e.type!=='reparse').map(e=>e.type));}
+show(s);

@@ -80,3 +80,63 @@ exports.puzzles.push(level('14 — 锁与遗产', '岩石挡住唯一入口，�
     ['WALL IS STOP', 13, 8, 'v'],
     ['FLAG IS WIN', 10, 2]
 ], [['ROCK', 3, 3], ['IS', 6, 8], ['YOU', 7, 8]]));
+// A chamber is separated by an actual locked threshold. GROUP is not a pickup:
+// the puzzle asks which objects should be members *at the moment* of unlocking.
+exports.puzzles.push(level('16 — 谁来开门', '想一想：GROUP 是一种身份，还是一个物体？所有成员都会付出相同的代价吗？', '实验关 · GROUP 的共享属性与物理空间', [
+    '............',
+    '############',
+    '#.....#....#',
+    '#..b..#....#',
+    '#.....d..f.#',
+    '#...r.#....#',
+    '#.....#....#',
+    '#.....#....#',
+    '#.....#....#',
+    '############',
+    '............'
+], [
+    ['BABA IS YOU', 0, 0], ['GROUP IS OPEN', 4, 0], ['WALL IS STOP', 8, 0],
+    ['ROCK IS PUSH', 0, 10], ['DOOR IS SHUT', 4, 10], ['FLAG IS WIN', 8, 10],
+    ['DOOR IS STOP', 10, 5, 'v'],
+    ['BABA IS GROUP', 1, 2], ['ROCK IS', 1, 6]
+], [['GROUP', 3, 7]]));
+// The order is the puzzle: the winning object must first be pushed ON WATER,
+// then the same PUSH property must be negated without cancelling the win.
+exports.puzzles.push(level('17 — 太早的答案', '完成一条规则不等于应该立即完成。观察石头必须先到达哪里。', '实验关 · 条件 GROUP 与时序反转', [
+    '................',
+    '################',
+    '#..............#',
+    '#..b...........#',
+    '#..r....###....#',
+    '#..........#...#',
+    '#....#.........#',
+    '#..............#',
+    '#..w...........#',
+    '#..............#',
+    '################',
+    '................'
+], [
+    ['BABA IS YOU', 0, 0], ['WALL IS STOP', 4, 0], ['ROCK IS PUSH', 9, 0],
+    ['ROCK ON WATER IS GROUP', 0, 11], ['GROUP IS WIN', 7, 11],
+    ['ROCK IS NOT', 6, 7]
+], [['PUSH', 9, 8]]));
+// A moving object remains in GROUP only while standing ON WATER. It can create
+// its own WATER underneath with MAKE, thus carrying its control condition.
+// The two phrases can be assembled in either order; neither alone wins.
+exports.puzzles.push(level('18 — 脚下的河', '你能为它创造脚下的路。但你自己的移动，也可能破坏远处的控制权。', '核心谜题 · 条件成员身份 × MAKE × 持续控制', [
+    '................',
+    '################',
+    '#......#########',
+    '#......######f##',
+    '#......####.#.##',
+    '#......####...##',
+    '#......####.####',
+    '#......###r.####',
+    '#..b...#########',
+    '################',
+    '................'
+], [
+    ['BABA IS YOU', 0, 0], ['ROCK ON WATER IS GROUP', 8, 0],
+    ['FLAG IS WIN', 0, 10], ['WALL IS STOP', 4, 10],
+    ['GROUP IS', 4, 3], ['ROCK MAKE', 1, 5]
+], [['YOU', 6, 4], ['WATER', 3, 6]], [{ kind: 'WATER', x: 10, y: 7 }]));

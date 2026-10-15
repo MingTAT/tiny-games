@@ -19,3 +19,10 @@
  .win-panel .next-level{padding:13px}
  .key-tip{margin-top:9px}
 }
+
+.level-btn.challenge{background:#2f4240;border:1px solid #d5aa58;color:#ffe0a0;box-shadow:inset 0 0 0 1px #765c36}
+.level-btn.challenge.selected{background:#ecd18f;color:#17252b}
+.debug-pane summary{list-style:none;cursor:pointer;color:#dac48f;font-weight:700;font-size:13px;line-height:1.5}
+.debug-pane summary::before{content:"＋ ";font-size:15px}
+.debug-pane[open] summary::before{content:"− "}
+.debug-pane .rules,.debug-pane pre{margin-top:16px}

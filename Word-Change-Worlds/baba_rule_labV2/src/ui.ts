@@ -11,15 +11,15 @@ const titleEl=document.querySelector<HTMLElement>('#level-title')!;
 const levelEl=document.querySelector<HTMLElement>('#levels')!;
 const hintEl=document.querySelector<HTMLElement>('#hint')!;
 const traceEl=document.querySelector<HTMLElement>('#trace')!;
-let level=13; // Advanced puzzles open by default; the earlier seven remain as optional lessons.
+let level=15; // Open the new mechanics-led challenge set, not the legacy demos.
 let state:State=clone(puzzles[level].state);
 const overlay=document.querySelector<HTMLElement>('#win-overlay')!;
 const nextButton=document.querySelector<HTMLButtonElement>('#next-level')!;
 const victoryTitle=document.querySelector<HTMLElement>('#victory-title')!;
 const victoryDetail=document.querySelector<HTMLElement>('#victory-detail')!;
 const completed=new Set<number>();
-try { for(const key of ['wcw-engine-1.2-completed','wcw-engine-1.3-completed']) for(const n of JSON.parse(localStorage.getItem(key)||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
-function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.3-completed',JSON.stringify([...completed]));}catch{}}
+try { for(const key of ['wcw-engine-1.2-completed','wcw-engine-1.3-completed','wcw-engine-1.4-completed']) for(const n of JSON.parse(localStorage.getItem(key)||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
+function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.4-completed',JSON.stringify([...completed]));}catch{}}
 let past:State[]=[];
 let future:State[]=[];
 let lastEvents:string[]=[];
@@ -95,7 +95,7 @@ function render(){
 function draw(){
   const won=state.status==='won';
   overlay.hidden=!won;
-  if(won){victoryTitle.textContent=level===puzzles.length-1?'进阶挑战完成！':'关卡完成！';victoryDetail.textContent=`${puzzles[level].title} · ${state.turn} 步`;nextButton.textContent=level<puzzles.length-1?'下一关 →':'返回关卡列表';}
+  if(won){victoryTitle.textContent=level===puzzles.length-1?'进阶挑战完成！':'关卡完成！';victoryDetail.textContent=`${puzzles[level].title} · ${state.turn} 步 · ${puzzles[level].concept}`;nextButton.textContent=level<puzzles.length-1?'下一关 →':'返回关卡列表';}
   titleEl.textContent=puzzles[level].title;
   turnEl.textContent=String(state.turn);
   statusEl.textContent=state.status==='won'?'已通关':'进行中';
@@ -105,7 +105,7 @@ function draw(){
   if(!list.length)rulesEl.textContent='暂无生效规则';
   traceEl.textContent=lastEvents.join('\n')||'每次行动的事件轨迹会在这里显示。';
   levelEl.replaceChildren();puzzles.forEach((l,i)=>{
-    const b=document.createElement('button');b.className=`level-btn ${i===level?'selected':''} ${i>=7?'advanced':''} ${completed.has(i)?'cleared':''}`;b.textContent=`${completed.has(i)?'✓ ':''}${String(i+1).padStart(2,'0')}`;b.title=l.concept;b.onclick=()=>choose(i);levelEl.appendChild(b);
+    const b=document.createElement('button');b.className=`level-btn ${i===level?'selected':''} ${i>=7?'advanced':''} ${i>=15?'challenge':''} ${completed.has(i)?'cleared':''}`;b.textContent=`${completed.has(i)?'✓ ':''}${String(i+1).padStart(2,'0')}`;b.title=l.concept;b.onclick=()=>choose(i);levelEl.appendChild(b);
   });
   render();
 }
