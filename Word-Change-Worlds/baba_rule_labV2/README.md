@@ -1,52 +1,57 @@
-# Words Change Worlds — TypeScript Engine v1.4
+# Words Change Worlds — Engine v1.5
 
-A browser-playable, original puzzle-engine experiment inspired by the *mechanics* of Baba Is You. It is **not** the original game, does not use the original game's audiovisual assets or levels, and is **not** a complete original-behavior implementation.
+An original, browser-playable rule-puzzle prototype. The gameplay concept is inspired by *Baba Is You*, but this is **not** the official game, its levels, or a complete 1:1 reproduction.
 
 ## Play
 
-- Open `play.html` in a browser. It is a single self-contained offline HTML file.
-- Arrow keys or WASD to move, Z to undo, Y to redo, R to restart, Space to wait, Enter on the victory panel to proceed.
-- The first seven levels are legacy short lessons; levels 8–15 are old experimental puzzles. **16–18 are the new mechanics-focused challenge series**, selected by default.
-- For a harder experience, leave the rules and event traces collapsed. You can open them to inspect rules without restarting.
-- Victory opens a next-level button and other navigation options. Completed levels are saved when browser storage is available.
+Open **`play.html`** directly (offline). Use arrow keys or WASD, Z to undo, Y to redo, R to restart, Space to wait, and Enter to advance after winning. The 18 pre-existing original test/puzzle levels are retained; the current project opens at level 16. The victory dialog and next-level button remain functional.
 
-## Develop
+## v1.5 changes
 
-Requires Node.js with TypeScript installed (`tsc`). In this runtime, no third-party runtime dependencies are needed.
+- **GROUP recursion**: `GROUP`, `GROUP2`, and `GROUP3` behave as independent, derived member sets. Membership supports transitive rules, `NOT` exclusions, conditions, cycles reaching a finite fixed point, and basic `EMPTY IS GROUP` inheritance. Cycles with changing negation are bounded approximations rather than faithful infinite-loop behavior.
+- **EMPTY virtual occupancy**: Each vacant cell is re-derived from entity positions. Supported subcases: `EMPTY IS ROCK/TEXT`, `ROCK IS EMPTY`, `EMPTY IS STOP`, `EMPTY IS PUSH` into a non-blocking occupied square, `EMPTY MAKE ROCK`, `EMPTY IS YOU`, `EMPTY IS WIN`, and `NEAR EMPTY`; EMPTY members may inherit group properties. An EMPTY tile is never persisted as a normal object. Higher-order movement/interaction and original randomness are still **partial**.
+- **Movement/phase ordering**: retaining the staged YOU → MOVE → SHIFT → noun transformation → TELE → MAKE → collision/overlap interactions → WIN pipeline, with reparse points and event traces. Stacked SHIFT conveys 2+ movements. TELE separates transporter networks by noun type, acts once per passenger per turn, and uses deterministic destination selection to support replay; this selection is **not** the original game's randomized behavior. This is **not** complete original priority ordering (FOLLOW/BACK/FALL, mixed-direction movement, concurrent update-order edge cases, etc. remain missing).
+- **No regressions**: all 18 earlier replay fixtures still pass without replacement. No new simple levels were added as a substitute for underlying mechanics.
 
-```
+## Run tests
+
+Requires Node.js and a local `tsc` executable:
+
+```sh
 npm run build
 npm test
-npm run record:local
-node scripts/shortcut-audit.cjs
+node scripts/compare-original.cjs
 ```
 
-- `src/core.ts` — pure game state, horizontal/vertical rule parsing, GROUP membership, staged movement, transformations, interactions, MAKE, and win checks.
-- `src/levels.ts` — board layout and puzzle definitions.
-- `src/ui.ts` — Canvas and controls; no game logic belongs here.
-- `tests/*` — local deterministic engine tests and replay assertions.
-- `replays/*` — per-turn full-state fixtures produced from our implementation, **not original-game observations**.
-- `scripts/shortcut-audit.cjs` — a *bounded* breadth-first search for very short bypass routes. It does not certify a globally shortest route.
-- `scripts/browser-v14.py` — visual smoke test for desktop/mobile and end-of-level navigation using installed Playwright + Chromium; uses inline page content to remain offline.
-- `web/` — compiled browser assets. `scripts/build.cjs` bundles them into `play.html` and `index.html`.
+`npm test` checks our engine and stored local replay trajectories (**123 passed at delivery**: 108 existing + 15 new behavior tests). The 15 new tests are **reference-derived**, informed by the mechanics references listed in `benchmarks/source-derived-specs.md`, not recorded from the original game. They exercise precise board states, expected properties, occupancy, movement and events.
 
-## What is new
+`node scripts/compare-original.cjs` is a separate comparison harness. Without input it correctly reports **0 original-game observations**. Populate fixtures based on *direct observations of an original game copy* using `benchmarks/original-trace-template.json`; the harness rejects fixtures without observation metadata. Entity output tuples are `[kind, word|null, x, y, direction]` and must be captured after each control input. A recreated board alone is not evidence of observed original behavior.
 
-The new challenge pack explores group inheritance, conditional membership, negation priority, and making an object continually recreate the terrain needed to remain controlled. The goal is to create interactions requiring a change of interpretation, not simply longer sequences of steps.
+```sh
+node scripts/compare-original.cjs benchmarks/original-observations/*.json
+```
 
-Tests caught an initially unintended 9-step victory path on level 16: the wall barrier had a gap. We fixed the actual board and added a shortcut check.
+No original game executable/save data or directly observed turn-by-turn recordings were supplied, and we did not operate an original copy in this environment: **empirical original-game comparisons = 0**. Wiki-derived behavioral assertions do not substitute for those comparisons.
 
-## Boundaries
+## Files
 
-- `GROUP` supports direct positive/negative/conditional membership with rule inheritance; recursive self-referential group rules and all other special-group edge cases are not implemented.
-- `EMPTY`, various high-order syntaxes and authentic original priority ordering remain incomplete.
-- Original-game empirical conformance tests: **0**. Source references and this project's own tests must not be presented as original-game replay certification.
-- Bounded route checks do not establish the puzzle's subjective difficulty. Human playtesting is still needed.
+- `src/core.ts` — pure TypeScript engine; no Canvas dependencies
+- `src/levels.ts` — 18 original project puzzles
+- `src/ui.ts` — Canvas rendering, controls and victory navigation
+- `tests/conformance-v15.test.cjs` — 15 new reference-derived checks
+- `tests/*.test.cjs`, `replays/*.json` — older local-engine tests/fixtures
+- `scripts/compare-original.cjs`, `benchmarks/` — independent original-game observation adapter
+- `scripts/browser-v15.py` — Chromium desktop/mobile smoke test
+- `play.html`/`index.html` — identical self-contained offline HTML
 
-## Updating GitHub
+## Known nonconformance
 
-If you already have the TypeScript `typescript-engine` branch from v1.3, replace matching source/project files with this ZIP and commit. Keep Rule Is World separate. Do not mix files from the old v0.x JavaScript prototypes.
+The engine still does **not** replicate the original's complete GROUP oscillation/infinite-loop handling, full EMPTY movement/interaction semantics, original random TELE routing, exact inter-stage priorities, complete syntax/verbs, or all simultaneous push/pull/swap cases. The original implementation contains many more stages and rules. This version is a tested **partial** rules expansion, not 1:1 certification.
 
-Suggested commit message:
+Source: *Baba Is You* Wiki entries for [GROUP](https://babaiswiki.fandom.com/wiki/GROUP), [EMPTY](https://babaiswiki.fandom.com/wiki/EMPTY), [TELE](https://babaiswiki.fandom.com/wiki/TELE), [Order of Operations](https://babaiswiki.fandom.com/wiki/Order_of_Operations), and a [Steam discussion involving the original developer](https://steamcommunity.com/app/736260/discussions/0/1768133742959216941/).
 
-`feat: add GROUP mechanics and audited multi-rule challenge puzzles`
+## GitHub
+
+Update the existing `typescript-engine` branch, overwriting files that match the names from this package. Keep the separate **Rule Is World** repository intact.
+
+Suggested commit: `feat: extend GROUP recursion and EMPTY mechanics with staged regression checks`

@@ -18,8 +18,8 @@ const nextButton=document.querySelector<HTMLButtonElement>('#next-level')!;
 const victoryTitle=document.querySelector<HTMLElement>('#victory-title')!;
 const victoryDetail=document.querySelector<HTMLElement>('#victory-detail')!;
 const completed=new Set<number>();
-try { for(const key of ['wcw-engine-1.2-completed','wcw-engine-1.3-completed','wcw-engine-1.4-completed']) for(const n of JSON.parse(localStorage.getItem(key)||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
-function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.4-completed',JSON.stringify([...completed]));}catch{}}
+try { for(const key of ['wcw-engine-1.2-completed','wcw-engine-1.3-completed','wcw-engine-1.4-completed','wcw-engine-1.5-completed']) for(const n of JSON.parse(localStorage.getItem(key)||'[]')) if(Number.isInteger(n))completed.add(n); } catch { /* Browsers may block file:// storage. */ }
+function rememberWin(){completed.add(level);try{localStorage.setItem('wcw-engine-1.5-completed',JSON.stringify([...completed]));}catch{}}
 let past:State[]=[];
 let future:State[]=[];
 let lastEvents:string[]=[];

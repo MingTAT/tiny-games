@@ -1,0 +1,32 @@
+{
+  "provenance": {
+    "kind": "TEMPLATE-NOT-OBSERVED",
+    "howRecorded": "Describe original gameplay recording and controls",
+    "gameVersion": "Specify original game's exact version",
+    "recordingReference": "Path or description of the video/screenshots"
+  },
+  "initial": {
+    "width": 4,
+    "height": 3,
+    "turn": 0,
+    "status": "playing",
+    "entities": [
+      {"id": 1, "kind": "TEXT", "word": "BABA", "x": 0, "y": 0, "dir": "right"},
+      {"id": 2, "kind": "TEXT", "word": "IS", "x": 1, "y": 0, "dir": "right"},
+      {"id": 3, "kind": "TEXT", "word": "YOU", "x": 2, "y": 0, "dir": "right"},
+      {"id": 4, "kind": "BABA", "x": 1, "y": 2, "dir": "right"}
+    ]
+  },
+  "turns": [
+    {
+      "input": "right",
+      "status": "playing",
+      "entities": [
+        ["TEXT", "BABA", 0, 0, "right"],
+        ["TEXT", "IS", 1, 0, "right"],
+        ["TEXT", "YOU", 2, 0, "right"],
+        ["BABA", null, 2, 2, "right"]
+      ]
+    }
+  ]
+}

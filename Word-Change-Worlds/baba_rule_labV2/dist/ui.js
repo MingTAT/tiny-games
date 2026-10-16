@@ -20,14 +20,14 @@ const victoryTitle = document.querySelector('#victory-title');
 const victoryDetail = document.querySelector('#victory-detail');
 const completed = new Set();
 try {
-    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed', 'wcw-engine-1.4-completed'])
+    for (const key of ['wcw-engine-1.2-completed', 'wcw-engine-1.3-completed', 'wcw-engine-1.4-completed', 'wcw-engine-1.5-completed'])
         for (const n of JSON.parse(localStorage.getItem(key) || '[]'))
             if (Number.isInteger(n))
                 completed.add(n);
 }
 catch { /* Browsers may block file:// storage. */ }
 function rememberWin() { completed.add(level); try {
-    localStorage.setItem('wcw-engine-1.4-completed', JSON.stringify([...completed]));
+    localStorage.setItem('wcw-engine-1.5-completed', JSON.stringify([...completed]));
 }
 catch { } }
 let past = [];

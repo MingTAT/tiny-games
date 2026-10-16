@@ -11,8 +11,8 @@ export type State = {width:number;height:number;entities:Entity[];turn:number;st
 export type Rule = {subject:string;subjectNegated:boolean;verb:Verb;predicate:string;predicateNegated:boolean;conditions:Condition[];wordIds:number[]};
 export type Event = {phase:string;type:string;ids?:number[];detail?:string};
 export type Result = {state:State;events:Event[];rules:Rule[]};
-export const nouns = new Set(['BABA','KEKE','ROCK','FLAG','WALL','WATER','SKULL','KEY','DOOR','GRASS','LOVE','TEXT','GROUP']);
-export const properties = new Set(['YOU','WIN','STOP','PUSH','PULL','SINK','DEFEAT','HOT','MELT','OPEN','SHUT','WEAK','FLOAT','MOVE','SHIFT','SWAP','WORD','SAFE','STILL','GROUP']);
+export const nouns = new Set(['BABA','KEKE','ROCK','FLAG','WALL','WATER','SKULL','KEY','DOOR','GRASS','LOVE','TEXT','GROUP','GROUP2','GROUP3','EMPTY']);
+export const properties = new Set(['YOU','WIN','STOP','PUSH','PULL','SINK','DEFEAT','HOT','MELT','OPEN','SHUT','WEAK','FLOAT','MOVE','SHIFT','TELE','SWAP','WORD','SAFE','STILL','GROUP','GROUP2','GROUP3']);
 const ops = new Set(['IS','HAS','MAKE','EAT']);
 const connectors = new Set(['AND','NOT','ON','NEAR','LONELY']);
 const lexical = new Set([...nouns,...properties,...ops,...connectors]);
@@ -124,30 +124,82 @@ export function parse(state:State):Rule[] {
   }
   return rules;
 }
-/** GROUP is a derived set, not an entity. Direct membership is decided by
- * noun IS GROUP (including conditional membership); a negated membership
- * removes the positive membership. Recursive group-membership rules are
- * deliberately not supported in this first, explicitly bounded version. */
-function belongsToGroup(s:State,e:Entity,rules:Rule[]):boolean {
-  const memberships=rules.filter(r=>r.verb==='IS' && r.predicate==='GROUP' && r.subject!=='GROUP'
-    && (r.subjectNegated ? e.kind!==r.subject : e.kind===r.subject) && conditionMatches(s,e,r));
-  return memberships.some(r=>!r.predicateNegated) && !memberships.some(r=>r.predicateNegated);
+/** Derived GROUP-family memberships.  A bounded least-fixed-point resolves
+ * GROUP -> GROUP2 -> GROUP3 chains and cycles with finite, stable membership.
+ * Negated memberships win over positive memberships at every iteration.
+ * This deliberately does not emulate the original engine's infinite-loop quirks. */
+const groupNames=['GROUP','GROUP2','GROUP3'] as const;
+type Memberships=Record<string,Set<number>>;
+const isGroup=(name:string)=>groupNames.some(g=>g===name);
+function empties(s:State):Entity[]{
+  const occupied=new Set(s.entities.map(e=>`${e.x},${e.y}`));
+  const out:Entity[]=[];
+  for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(!occupied.has(`${x},${y}`)){
+    out.push({id:-1-(y*s.width+x),kind:'EMPTY',x,y,dir:'right'});
+  }
+  return out;
 }
-function matchesSubject(s:State,e:Entity,r:Rule,rules:Rule[]):boolean {
-  const match = r.subject==='GROUP' ? belongsToGroup(s,e,rules) : e.kind===r.subject;
-  return r.subjectNegated?!match:match;
+function groupCondition(s:State,e:Entity,target:string,kind:'ON'|'NEAR',members?:Memberships):boolean{
+  const near=(other:Entity)=>other.id!==e.id && (kind==='ON'?(other.x===e.x&&other.y===e.y):(Math.abs(other.x-e.x)<=1&&Math.abs(other.y-e.y)<=1));
+  if(isGroup(target)){
+    // GROUP in a condition means all represented member kinds, not any member.
+    const universe=members?.[target] && [...members[target]].some(id=>id<0)?[...s.entities,...empties(s)]:s.entities;
+    const all=universe.filter(o=>members?.[target]?.has(o.id));
+    const kinds=[...new Set(all.map(o=>o.kind))];
+    return kinds.length>0&&kinds.every(name=>all.some(other=>other.kind===name&&near(other)));
+  }
+  if(target==='EMPTY')return empties(s).some(near);
+  return s.entities.some(o=>o.kind===target&&near(o));
 }
-function conditionMatches(s:State,e:Entity,r:Rule):boolean{
+function conditionMatches(s:State,e:Entity,r:Rule,members?:Memberships):boolean{
   return r.conditions.every(c=>{
     if(c.kind==='LONELY')return !at(s,e.x,e.y).some(other=>other.id!==e.id);
-    const neighbors=c.kind==='ON'?at(s,e.x,e.y).filter(other=>other.id!==e.id):s.entities.filter(other=>other.id!==e.id&&Math.abs(other.x-e.x)<=1&&Math.abs(other.y-e.y)<=1);
-    const valid=neighbors.some(other=>other.kind===c.target);
+    const valid=groupCondition(s,e,c.target,c.kind,members);
     return c.negated?!valid:valid;
   });
 }
-export function rulesFor(s:State,e:Entity,rules:Rule[]):Rule[]{
-  return rules.filter(r=>matchesSubject(s,e,r,rules)&&conditionMatches(s,e,r));
+function resolveGroups(s:State,rules:Rule[]):Memberships{
+  let groups:Memberships=Object.fromEntries(groupNames.map(g=>[g,new Set<number>()]));
+  const entities=rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&isGroup(r.predicate))
+    ?[...s.entities,...empties(s)]:s.entities;
+  if(!rules.some(r=>r.verb==='IS'&&isGroup(r.predicate)))return groups;
+  const cap=Math.max(8,entities.length*groupNames.length+4);
+  for(let pass=0;pass<cap;pass++){
+    const next:Memberships=Object.fromEntries(groupNames.map(g=>[g,new Set<number>()]));
+    for(const e of entities){
+      for(const group of groupNames){
+        let positive=false,negative=false;
+        for(const r of rules){
+          if(r.verb!=='IS'||r.predicate!==group)continue;
+          const hit=isGroup(r.subject)?groups[r.subject].has(e.id):r.subject==='TEXT'?e.kind==='TEXT':r.subject===e.kind;
+          if((r.subjectNegated?!hit:hit)&&conditionMatches(s,e,r,groups)){
+            if(r.predicateNegated)negative=true;else positive=true;
+          }
+        }
+        if(positive&&!negative)next[group].add(e.id);
+      }
+    }
+    if(groupNames.every(g=>next[g].size===groups[g].size&&[...next[g]].every(id=>groups[g].has(id))))return next;
+    groups=next;
+  }
+  // A cyclic negated self-definition can oscillate. Prefer the last finite
+  // approximation; original infinite-loop and parity behavior isn't claimed.
+  return groups;
 }
+function matchesSubject(s:State,e:Entity,r:Rule,rules:Rule[],groups?:Memberships):boolean {
+  const match=isGroup(r.subject)?!!groups?.[r.subject]?.has(e.id):e.kind===r.subject;
+  return r.subjectNegated?!match:match;
+}
+export function rulesFor(s:State,e:Entity,rules:Rule[]):Rule[]{
+  const groups=resolveGroups(s,rules);
+  return rules.filter(r=>matchesSubject(s,e,r,rules,groups)&&conditionMatches(s,e,r,groups));
+}
+/** Visible for tests and future condition-aware rule inspection. */
+export function groupMembers(s:State,rules:Rule[]):Record<string,number[]>{
+  const groups=resolveGroups(s,rules);
+  return Object.fromEntries(groupNames.map(g=>[g,[...groups[g]].sort((a,b)=>a-b)]));
+}
+
 export function props(s:State,e:Entity,rules:Rule[]):Set<string>{
   const rr=rulesFor(s,e,rules).filter(r=>r.verb==='IS'&&properties.has(r.predicate));
   const positives=new Set(rr.filter(r=>!r.predicateNegated).map(r=>r.predicate));
@@ -168,6 +220,7 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
   const [dx,dy]=vectors[dir];
   const plan=new Map<number,[number,number]>(),visiting=new Set<number>();
   const eaten=new Set<number>(),unlocked=new Set<number>(),unlockMovers=new Set<number>();
+  const vacancyPushes:string[]=[];
   const edible=(a:Entity,b:Entity)=> a.id!==b.id && sameLayer(s,a,b,rules) && !has(s,b,'SAFE',rules) &&
     rulesFor(s,a,rules).some(r=>r.verb==='EAT'&&!r.predicateNegated&&r.predicate===b.kind)&&
     !rulesFor(s,a,rules).some(r=>r.verb==='EAT'&&r.predicateNegated&&r.predicate===b.kind);
@@ -179,6 +232,27 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
     if(visiting.has(e.id)||has(s,e,'STILL',rules))return false;
     const x=e.x+dx,y=e.y+dy;if(!inBounds(s,x,y))return false;
     visiting.add(e.id);
+    // EMPTY is a vacancy, not an actor with a persistent ID.  Its STOP/PUSH
+    // affects entry only if the target tile is vacant in this movement phase.
+    if(at(s,x,y).length===0){
+      const vacancy:Entity={id:-1-(y*s.width+x),kind:'EMPTY',x,y,dir};
+      if(has(s,vacancy,'PUSH',rules)){
+        // To push a vacancy, the chain must eventually reach an occupied tile
+        // without a blocking property; otherwise the edge stops the chain.
+        let nx=x,ny=y,found=false;
+        while(inBounds(s,nx,ny)){
+          if(at(s,nx,ny).length){
+            found=at(s,nx,ny).every(obj=>!has(s,obj,'STOP',rules)&&!has(s,obj,'PUSH',rules)&&!has(s,obj,'STILL',rules));
+            break;
+          }
+          nx+=dx;ny+=dy;
+        }
+        if(!found){visiting.delete(e.id);return false;}
+        vacancyPushes.push(`${x},${y}`);
+      }else if(has(s,vacancy,'STOP',rules)){
+        visiting.delete(e.id);return false;
+      }
+    }
     for(const other of at(s,x,y)){
       if(other.id===e.id||eaten.has(other.id)||unlocked.has(other.id))continue;
       if(unlocking(e,other)){
@@ -198,6 +272,7 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
     visiting.delete(e.id);plan.set(e.id,[x,y]);return true;
   }
   if(!traverse(root))return false;
+  for(const tile of vacancyPushes)events.push({phase:'movement',type:'empty-push',detail:tile});
   const beforeDeletion=clone(s);
   const original=new Map(s.entities.map(e=>[e.id,[e.x,e.y] as [number,number]]));
   const doomed=new Set([...eaten,...unlocked,...unlockMovers]);
@@ -239,14 +314,34 @@ function moveStage(s:State,dir:Direction|undefined,kind:'YOU'|'MOVE'|'SHIFT',eve
   const rules=parse(s),moved=new Set<number>();
   if(kind==='SHIFT'){
     const conveyors=s.entities.filter(e=>has(s,e,'SHIFT',rules)).sort((a,b)=>a.id-b.id);
-    // Baseline SHIFT behavior only: grouped/multi-SHIFT stacking is not yet original-parity.
-    for(const conveyor of conveyors){
-      for(const target of at(s,conveyor.x,conveyor.y)){
-        if(target.id===conveyor.id||moved.has(target.id))continue;
-        commitMovement(s,target,conveyor.dir,rules,events,moved);
+    // Each overlapping SHIFT contributes a movement to the same target.  A
+    // target takes its direction from the earliest conveyor in object order.
+    // Snapshot the queued actions first; no new shift is queued midway.
+    const queue=new Map<number,{id:number;direction:Direction;remaining:number}>();
+    for(const belt of conveyors)for(const target of at(s,belt.x,belt.y)){
+      if(target.id===belt.id)continue;
+      const entry=queue.get(target.id);
+      if(entry)entry.remaining++;
+      else queue.set(target.id,{id:target.id,direction:belt.dir,remaining:1});
+    }
+    let count=0;
+    while([...queue.values()].some(item=>item.remaining>0)&&count++<128){
+      const thisTick=new Set<number>();
+      for(const item of queue.values()){
+        if(item.remaining<=0)continue;
+        item.remaining--;
+        const target=s.entities.find(e=>e.id===item.id);
+        if(target)commitMovement(s,target,item.direction,rules,events,thisTick);
       }
     }
     return;
+  }
+  if(kind==='YOU' && dir && rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&r.predicate==='YOU')){
+    const vacant=empties(s).filter(e=>has(s,e,'YOU',rules));
+    const [vx,vy]=vectors[dir];
+    let attempts=0;
+    for(const e of vacant)if(inBounds(s,e.x+vx,e.y+vy))attempts++;
+    if(attempts)events.push({phase:'movement',type:'empty-move',detail:`${attempts} transient vacancy moves; recalculated immediately`});
   }
   let movers=s.entities.filter(e=>has(s,e,kind,rules));
   if(kind==='YOU'&&dir){const [dx,dy]=vectors[dir];movers.sort((a,b)=>(b.x*dx+b.y*dy)-(a.x*dx+a.y*dy)||a.id-b.id);}
@@ -268,11 +363,16 @@ function transform(s:State,events:Event[]):void{
     const denied=new Set(matches.filter(r=>r.predicateNegated).map(r=>r.predicate));
     // X IS X protects X against every IS-to-noun conversion.
     const protectedSelf=matches.some(r=>!r.predicateNegated&&r.predicate===e.kind);
+    // X IS EMPTY is deletion; there is no persistent EMPTY entity.
+    if(matches.some(r=>!r.predicateNegated&&r.predicate==='EMPTY')&&!denied.has('EMPTY')&&!protectedSelf){
+      events.push({phase:'transform',type:'to-empty',ids:[e.id],detail:`${e.kind} IS EMPTY`});
+      continue;
+    }
     if(denied.has(e.kind)&&!protectedSelf){
       events.push({phase:'transform',type:'vanish',ids:[e.id],detail:`${e.kind} IS NOT ${e.kind}`});
       continue;
     }
-    const positive=protectedSelf?[]:[...new Set(matches.filter(r=>!r.predicateNegated&&r.predicate!=='GROUP'&&r.predicate!==e.kind&&!denied.has(r.predicate)).map(r=>r.predicate))];
+    const positive=protectedSelf?[]:[...new Set(matches.filter(r=>!r.predicateNegated&&!isGroup(r.predicate)&&r.predicate!=='EMPTY'&&r.predicate!==e.kind&&!denied.has(r.predicate)).map(r=>r.predicate))];
     if(!positive.length){output.push(e);continue;}
     for(const kind of positive){
       const unit=nounUnit(e,kind,id++);output.push(unit);
@@ -280,6 +380,23 @@ function transform(s:State,events:Event[]):void{
     }
   }
   s.entities=output;
+  // EMPTY transformations act on vacancies present at the start of this phase.
+  // They are virtual, unique per tile, and never stored as EMPTY objects.
+  const after=parse(s);
+  if(!after.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&nouns.has(r.predicate)&&!isGroup(r.predicate)))return;
+  const vacancies=empties(s);
+  const formed:Entity[]=[];
+  for(const empty of vacancies){
+    const candidates=rulesFor(s,empty,after).filter(r=>r.verb==='IS'&&nouns.has(r.predicate));
+    const neg=new Set(candidates.filter(r=>r.predicateNegated).map(r=>r.predicate));
+    if(candidates.some(r=>!r.predicateNegated&&r.predicate==='EMPTY'))continue;
+    for(const name of new Set(candidates.filter(r=>!r.predicateNegated&&!isGroup(r.predicate)&&r.predicate!=='EMPTY'&&!neg.has(r.predicate)).map(r=>r.predicate))){
+      if(formed.length>=512)break;
+      const made=nounUnit(empty,name,id++);formed.push(made);
+      events.push({phase:'transform',type:'empty-transform',ids:[made.id],detail:`EMPTY -> ${name} at ${empty.x},${empty.y}`});
+    }
+  }
+  s.entities.push(...formed);
 }
 function spawnOnDeleteWithOldState(s:State,beforeDeletion:State,deleted:Entity[],rules:Rule[],events:Event[]):void{
   let id=nextId(s);let spawned=0;
@@ -310,9 +427,34 @@ function interact(s:State,events:Event[]):void{
   }
   if(removed.size){const beforeDeletion=clone(s);const dead=s.entities.filter(e=>removed.has(e.id));s.entities=s.entities.filter(e=>!removed.has(e.id));events.push({phase:'interaction',type:'destroy',ids:[...removed]});spawnOnDeleteWithOldState(s,beforeDeletion,dead,rules,events);}
 }
+/** Deterministic TELE subset: source must share FLOAT layer with passenger;
+ * destination has same noun type, but may occupy a different FLOAT layer.
+ * Original 3+ destination randomization is intentionally not claimed. */
+function teleport(s:State,events:Event[]):void{
+  const rules=parse(s);
+  const sources=s.entities.filter(e=>has(s,e,'TELE',rules)).sort((a,b)=>a.id-b.id);
+  const moved=new Set<number>();
+  const nextPosition=new Map<number,[number,number]>();
+  for(const source of sources){
+    const destinations=sources.filter(target=>target.kind===source.kind&&target.id!==source.id);
+    if(!destinations.length)continue;
+    const residents=at(s,source.x,source.y).filter(e=>e.id!==source.id&&!moved.has(e.id)&&sameLayer(s,e,source,rules));
+    for(const resident of residents){
+      // Stacked TELE objects of the same type do not teleport one another.
+      if(resident.kind===source.kind&&has(s,resident,'TELE',rules))continue;
+      const index=(Math.imul(resident.id+3,2654435761)+(s.turn+1)*1013904223)>>>0;
+      const target=destinations[index%destinations.length];
+      moved.add(resident.id);
+      nextPosition.set(resident.id,[target.x,target.y]);
+      events.push({phase:'teleport',type:'tele',ids:[source.id,resident.id,target.id],detail:`${source.kind} -> ${target.x},${target.y}`});
+    }
+  }
+  for(const [id,[x,y]] of nextPosition){const entity=s.entities.find(e=>e.id===id);if(entity){entity.x=x;entity.y=y;}}
+}
 function makeEntities(s:State,events:Event[]):void{
   const rules=parse(s);let id=nextId(s);const created:Entity[]=[];
-  for(const e of s.entities){
+  const makers=rules.some(r=>r.subject==='EMPTY'&&r.verb==='MAKE')?[...s.entities,...empties(s)]:s.entities;
+  for(const e of makers){
     const rr=rulesFor(s,e,rules).filter(r=>r.verb==='MAKE'&&!r.predicateNegated);
     for(const kind of new Set(rr.map(r=>r.predicate))){
       if(rulesFor(s,e,rules).some(r=>r.verb==='MAKE'&&r.predicateNegated&&r.predicate===kind))continue;
@@ -325,6 +467,11 @@ function makeEntities(s:State,events:Event[]):void{
 }
 function winCheck(s:State,events:Event[]):void{
   const rules=parse(s);
+  if(rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&r.predicate==='YOU'&&!r.predicateNegated)&&
+     rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&r.predicate==='WIN'&&!r.predicateNegated)&&
+     empties(s).some(e=>has(s,e,'YOU',rules)&&has(s,e,'WIN',rules))){
+    s.status='won';events.push({phase:'victory',type:'win',detail:'EMPTY IS YOU and EMPTY IS WIN'});return;
+  }
   for(const e of s.entities){if(!has(s,e,'YOU',rules))continue;
     if(has(s,e,'WIN',rules)||s.entities.some(other=>other.id!==e.id&&other.x===e.x&&other.y===e.y&&sameLayer(s,e,other,rules)&&has(s,other,'WIN',rules))){
       s.status='won';events.push({phase:'victory',type:'win',ids:[e.id]});break;
@@ -341,10 +488,15 @@ export function step(previous:State,input:Direction|'wait'):Result {
   events.push({phase:'rules',type:'reparse',detail:'post MOVE'});
   moveStage(s,undefined,'SHIFT',events);
   events.push({phase:'rules',type:'reparse',detail:'post SHIFT'});
+  events.push({phase:'rules',type:'reparse',detail:'pre transform'});
   transform(s,events);
   events.push({phase:'rules',type:'reparse',detail:'post transform'});
+  teleport(s,events);
+  events.push({phase:'rules',type:'reparse',detail:'post TELE'});
   makeEntities(s,events);
+  events.push({phase:'rules',type:'reparse',detail:'post make'});
   interact(s,events);
+  events.push({phase:'rules',type:'reparse',detail:'post interactions'});
   winCheck(s,events);
   s.turn++;
   return {state:s,events,rules:parse(s)};
