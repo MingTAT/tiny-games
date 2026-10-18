@@ -1,57 +1,50 @@
-# Words Change Worlds — Engine v1.5
+# Words Change Worlds · Puzzle Edition v1.7
 
-An original, browser-playable rule-puzzle prototype. The gameplay concept is inspired by *Baba Is You*, but this is **not** the official game, its levels, or a complete 1:1 reproduction.
+An independent TypeScript+Canvas puzzle game inspired by movable-rule puzzles. **Not an official or pixel-perfect copy of Baba Is You**. The graphics in this repository are procedurally drawn and do not contain original commercial game art or maps.
 
 ## Play
 
-Open **`play.html`** directly (offline). Use arrow keys or WASD, Z to undo, Y to redo, R to restart, Space to wait, and Enter to advance after winning. The 18 pre-existing original test/puzzle levels are retained; the current project opens at level 16. The victory dialog and next-level button remain functional.
+Open `play.html` (single-file, works offline). Arrow keys/WASD move, Z undo, Y redo, R restart. Click `关卡地图` to switch levels. Mobile has onscreen arrows and swipe controls. A victory overlay has **Next Level**, replay and map actions; Enter also advances.
 
-## v1.5 changes
+The build opens on level 19. Levels 01–18 are preserved for backwards compatibility but considered instructional prototypes. Levels **19–20** have been newly authored for this edition:
 
-- **GROUP recursion**: `GROUP`, `GROUP2`, and `GROUP3` behave as independent, derived member sets. Membership supports transitive rules, `NOT` exclusions, conditions, cycles reaching a finite fixed point, and basic `EMPTY IS GROUP` inheritance. Cycles with changing negation are bounded approximations rather than faithful infinite-loop behavior.
-- **EMPTY virtual occupancy**: Each vacant cell is re-derived from entity positions. Supported subcases: `EMPTY IS ROCK/TEXT`, `ROCK IS EMPTY`, `EMPTY IS STOP`, `EMPTY IS PUSH` into a non-blocking occupied square, `EMPTY MAKE ROCK`, `EMPTY IS YOU`, `EMPTY IS WIN`, and `NEAR EMPTY`; EMPTY members may inherit group properties. An EMPTY tile is never persisted as a normal object. Higher-order movement/interaction and original randomness are still **partial**.
-- **Movement/phase ordering**: retaining the staged YOU → MOVE → SHIFT → noun transformation → TELE → MAKE → collision/overlap interactions → WIN pipeline, with reparse points and event traces. Stacked SHIFT conveys 2+ movements. TELE separates transporter networks by noun type, acts once per passenger per turn, and uses deterministic destination selection to support replay; this selection is **not** the original game's randomized behavior. This is **not** complete original priority ordering (FOLLOW/BACK/FALL, mixed-direction movement, concurrent update-order edge cases, etc. remain missing).
-- **No regressions**: all 18 earlier replay fixtures still pass without replacement. No new simple levels were added as a substitute for underlying mechanics.
+- **19 · 借来的动词 (The Borrowed IS)**. One IS tile has to transform the separating wall into rocks, then be removed and reused to complete FLAG IS WIN. Transformations persist after the rule is broken; both tasks need the same tile at different points.
+- **20 · 你不再是你 (You Are No Longer You)**. A player must transfer control to a ROCK before physically replacing the original BABA IS YOU with BABA IS WIN. Completing the latter too early removes all control; after the switch the rock has to touch the now-static Baba.
 
-## Run tests
+These are puzzle design experiments with two distinct conceptual reversals, **not validated claims that they match the commercial game's difficulty**. Neither has been fully audited for all unintended solutions; the bounded breadth-first search was inconclusive within its time budget. Route and counterfactual tests do not prove uniqueness.
 
-Requires Node.js and a local `tsc` executable:
+## UI redesign
+
+v1.7 replaces the previous web app layout with one centered Canvas, a compact HUD and modal level selector, darker dungeon palette, color-coded word blocks, procedurally connected walls, tiny deterministic environment details and subtly animated words/characters. Mobile supports touch controls. It reuses the independent engine; no original-game assets have been copied.
+
+## Build & tests
+
+Requires Node.js and the TypeScript compiler `tsc`.
 
 ```sh
 npm run build
 npm test
-node scripts/compare-original.cjs
+python scripts/browser-v17.py
 ```
 
-`npm test` checks our engine and stored local replay trajectories (**123 passed at delivery**: 108 existing + 15 new behavior tests). The 15 new tests are **reference-derived**, informed by the mechanics references listed in `benchmarks/source-derived-specs.md`, not recorded from the original game. They exercise precise board states, expected properties, occupancy, movement and events.
+The automated suite includes 20 locally recorded complete level replays, rule-engine regression tests, and v1.7 assertions on the exact important semantic moments of the two new puzzles. **147 automated tests pass.** Browser smoke tests use Chromium on the generated standalone HTML and check actual keyboard playthrough of both new levels, Next Level navigation, menu, restart, undo, mobile layout and JavaScript errors.
 
-`node scripts/compare-original.cjs` is a separate comparison harness. Without input it correctly reports **0 original-game observations**. Populate fixtures based on *direct observations of an original game copy* using `benchmarks/original-trace-template.json`; the harness rejects fixtures without observation metadata. Entity output tuples are `[kind, word|null, x, y, direction]` and must be captured after each control input. A recreated board alone is not evidence of observed original behavior.
+`node scripts/shortcut-v17.cjs` provides a time-budgeted shortcut scan. **A scan ending due to budget is inconclusive**; it is not a proof that a shorter solution does not exist.
 
-```sh
-node scripts/compare-original.cjs benchmarks/original-observations/*.json
-```
+`benchmarks/` still states original-game discrepancies; **original commercial game empirical replay cases: 0**. External documentation and developer interviews do not establish bit-for-bit parity.
 
-No original game executable/save data or directly observed turn-by-turn recordings were supplied, and we did not operate an original copy in this environment: **empirical original-game comparisons = 0**. Wiki-derived behavioral assertions do not substitute for those comparisons.
+## Structure
 
-## Files
-
-- `src/core.ts` — pure TypeScript engine; no Canvas dependencies
-- `src/levels.ts` — 18 original project puzzles
-- `src/ui.ts` — Canvas rendering, controls and victory navigation
-- `tests/conformance-v15.test.cjs` — 15 new reference-derived checks
-- `tests/*.test.cjs`, `replays/*.json` — older local-engine tests/fixtures
-- `scripts/compare-original.cjs`, `benchmarks/` — independent original-game observation adapter
-- `scripts/browser-v15.py` — Chromium desktop/mobile smoke test
-- `play.html`/`index.html` — identical self-contained offline HTML
-
-## Known nonconformance
-
-The engine still does **not** replicate the original's complete GROUP oscillation/infinite-loop handling, full EMPTY movement/interaction semantics, original random TELE routing, exact inter-stage priorities, complete syntax/verbs, or all simultaneous push/pull/swap cases. The original implementation contains many more stages and rules. This version is a tested **partial** rules expansion, not 1:1 certification.
-
-Source: *Baba Is You* Wiki entries for [GROUP](https://babaiswiki.fandom.com/wiki/GROUP), [EMPTY](https://babaiswiki.fandom.com/wiki/EMPTY), [TELE](https://babaiswiki.fandom.com/wiki/TELE), [Order of Operations](https://babaiswiki.fandom.com/wiki/Order_of_Operations), and a [Steam discussion involving the original developer](https://steamcommunity.com/app/736260/discussions/0/1768133742959216941/).
+- `src/core.ts` — renderer-independent state updates and rule parsing
+- `src/levels.ts` — all 20 custom puzzles
+- `src/ui.ts` + `web/` — Canvas renderer and controls
+- `tests/puzzle-design-v17.test.cjs` — conceptual and negative-case tests for levels 19–20
+- `scripts/browser-v17.py` — actual desktop/mobile interface walkthroughs
+- `replays/` — local-engine replay snapshots, NOT observations from Baba Is You
+- `play.html` / `index.html` — offline self-contained game
 
 ## GitHub
 
-Update the existing `typescript-engine` branch, overwriting files that match the names from this package. Keep the separate **Rule Is World** repository intact.
+On the existing `typescript-engine` branch, back up v1.6 and replace matching project files with the v1.7 ZIP. Keep the other `Rule Is World` project independent.
 
-Suggested commit: `feat: extend GROUP recursion and EMPTY mechanics with staged regression checks`
+Suggested commit: `feat: redesign puzzle UI and add two discovery-based rule levels`

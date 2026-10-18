@@ -19,7 +19,7 @@ for(const pathname of paths){
  if(!doc.initial||!Array.isArray(doc.turns)||!doc.turns.length){console.error('INVALID fixture:',pathname);fail++;continue;}
  let s=doc.initial,okay=true;
  for(const [i,t] of doc.turns.entries()){
-   if(!VALID.has(t.input)||!Array.isArray(t.entities)||!['playing','won'].includes(t.status)){console.error('INVALID turn',pathname,i+1);okay=false;break;}
+   if(!VALID.has(t.input)||!Array.isArray(t.entities)||!['playing','won','loop'].includes(t.status)){console.error('INVALID turn',pathname,i+1);okay=false;break;}
    s=step(s,t.input).state;
    const actual=JSON.stringify(normalized(s)),expected=JSON.stringify(t.entities.slice().sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
    if(actual!==expected||s.status!==t.status){console.error('DIFF',pathname,'turn',i+1,JSON.stringify({expected:t.entities,actual:normalized(s),expectedStatus:t.status,actualStatus:s.status}));okay=false;break;}

@@ -19,7 +19,9 @@ const plans=[
 'U U U U D D D D R R U D R',
 'R R D D D D D L L U R U U L U R R R R R R',
 'D D D D R D D R R R R R U L L L L L L',
-'U U R R R U U L L L U U R U U R R U U'
+'U U R R R U U L L L U U R U U R R U U',
+'R U U U L L U U R R D D D R R R D D R R R R',
+'R U R U U L U L L L L L U'
 ];
 const map={R:'right',L:'left',D:'down',U:'up'};
 if(plans.length!==puzzles.length)throw new Error(`Missing plans ${plans.length}/${puzzles.length}`);

@@ -1,16 +1,16 @@
-# Known gaps vs original behavior (v1.5)
+# Known differences vs original gameplay (v1.6)
 
-These are **not passing parity cases** and must not be counted as verified original-game tests.
+**Do not present any of these as original-game-verified.** We have observed the original in the environment **0** times. The automated tests use source-derived expectations, plus old internal-engine trajectories.
 
-| Feature | Present engine behavior | Original / outstanding verification |
+| Subsystem | New v1.6 behavior | Still missing / uncertain |
 |---|---|---|
-| `GROUP IS NOT GROUP` and self-negating recursive definitions | Bounded membership iteration and return of a finite approximation | Wiki describes oscillations/infinite loops and additional special behavior. Need original capture and explicit event model. |
-| `EMPTY IS YOU` movement | Virtual vacancies emit movement-attempt events; they do not persist as independent actors | Original recalculates every single-space step, and special interaction effects can occur while vacancy moves. More collision logic needed. |
-| `EMPTY IS OPEN`, `EMPTY IS SINK` | Not all special contact behaviors implemented | Some movement-stage interactions differ from ordinary overlapping collision checks. |
-| Simultaneous competing SHIFT directions | First conveyor direction selected; overlapping conveyors contribute multiple steps | Exact original priority depends on queued object processing and update order. |
-| Three or more matching TELE sources | Deterministic destination function, for replay repeatability | Original routes randomly; real-game randomized output cannot be compared as a single deterministic path. |
-| FOLLOW, BACK, FALL, directional forces, other special stages | Not implemented | Original's full interleaved event pipeline has many additional movement and destruction stages. |
-| Mixed-group conditions with complex infix predicates | Partial all-member condition matching, limited to ON/NEAR/LONELY grammar | Full original group/infix parsing and bugs not represented. |
-| Real original-game replay | No direct original-game observation supplied | 0 original empirical comparisons; `scripts/compare-original.cjs` requires genuinely observed fixtures. |
+| GROUP / GROUP2 / GROUP3 recursion | Transitive memberships, stable positive cycles, negation exclusions; detect repeated membership-state oscillation and stop the turn with a reversible `loop` UI state | Full original group rules, conditional nonmonotonic fixed points and all infinite-loop categories; original error limits and exact precedence |
+| `EMPTY IS YOU` | Vacant positions attempt directional movement, push real PUSH objects on contact; never persist as map entities | Exact original scheduling of all vacancy movers when several directions/forces interact, virtual PULL/MOVE and other collisions |
+| `EMPTY IS PUSH` | Can push through chains of vacancies into physical PUSH objects; transactional rollback on STOP / edge | Original full handling of PULL, SWAP, open/shut, multiple layers and simultaneous movement into rearranging vacancy regions |
+| Re-parsing stages | Reparse actually runs after relevant phases; records rule changes and detects group paradoxes after text movement | Original full phase ordering (special verbs/effects, random destinations, many missing properties) |
+| TELE | Deterministic routing by object type (replay-friendly) | Original 3+ destinations are random rather than our seeded deterministic mapping |
+| FLOAT / various interactions | Partial existing engine behavior | Full collision phases and layer interaction details |
+| Level complexity | 18 original project levels retained and regression-tested | Cannot claim puzzle-design parity with commercial original |
+| Direct empirical comparison with original game | Comparator rejects unverified or missing fixture provenance | **0 recorded original-game traces available**. Real footage/inputs/board state needed for genuine A/B results |
 
-The presence of a working reference-derived unit test does not close a row above. A gap is closed only when the mechanics work and the direct gameplay reference has been recorded and matched (where possible).
+Relevant public sources: [GROUP](https://babaiswiki.fandom.com/wiki/GROUP), [Infinite Loop](https://babaiswiki.fandom.com/wiki/Infinite_Loop), [EMPTY](https://babaiswiki.fandom.com/wiki/EMPTY), [Order of Operations](https://babaiswiki.fandom.com/wiki/Order_of_Operations), [original creator comment](https://steamcommunity.com/app/736260/discussions/0/3454730619128231627/).

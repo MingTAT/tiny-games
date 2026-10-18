@@ -7,7 +7,7 @@ export type Direction = 'up' | 'right' | 'down' | 'left';
 export type Verb = 'IS' | 'HAS' | 'MAKE' | 'EAT';
 export type Condition = { kind: 'ON' | 'NEAR'; target: string; negated: boolean } | {kind: 'LONELY'};
 export type Entity = {id:number;kind:string;x:number;y:number;dir:Direction;word?:string};
-export type State = {width:number;height:number;entities:Entity[];turn:number;status:'playing'|'won'};
+export type State = {width:number;height:number;entities:Entity[];turn:number;status:'playing'|'won'|'loop'};
 export type Rule = {subject:string;subjectNegated:boolean;verb:Verb;predicate:string;predicateNegated:boolean;conditions:Condition[];wordIds:number[]};
 export type Event = {phase:string;type:string;ids?:number[];detail?:string};
 export type Result = {state:State;events:Event[];rules:Rule[]};
@@ -124,10 +124,9 @@ export function parse(state:State):Rule[] {
   }
   return rules;
 }
-/** Derived GROUP-family memberships.  A bounded least-fixed-point resolves
- * GROUP -> GROUP2 -> GROUP3 chains and cycles with finite, stable membership.
- * Negated memberships win over positive memberships at every iteration.
- * This deliberately does not emulate the original engine's infinite-loop quirks. */
+/** Derived GROUP-family memberships. Positive cycles converge by fixed-point;
+ * self-negative loops can oscillate and must NOT be silently approximated.
+ * We detect repeated configurations and report a reversible loop state. */
 const groupNames=['GROUP','GROUP2','GROUP3'] as const;
 type Memberships=Record<string,Set<number>>;
 const isGroup=(name:string)=>groupNames.some(g=>g===name);
@@ -158,12 +157,15 @@ function conditionMatches(s:State,e:Entity,r:Rule,members?:Memberships):boolean{
     return c.negated?!valid:valid;
   });
 }
-function resolveGroups(s:State,rules:Rule[]):Memberships{
+export type GroupDiagnostic = {members:Record<string,number[]>;loop:boolean;iterations:number};
+function analyzeGroups(s:State,rules:Rule[]):{groups:Memberships;loop:boolean;iterations:number}{
   let groups:Memberships=Object.fromEntries(groupNames.map(g=>[g,new Set<number>()]));
   const entities=rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&isGroup(r.predicate))
     ?[...s.entities,...empties(s)]:s.entities;
-  if(!rules.some(r=>r.verb==='IS'&&isGroup(r.predicate)))return groups;
-  const cap=Math.max(8,entities.length*groupNames.length+4);
+  if(!rules.some(r=>r.verb==='IS'&&isGroup(r.predicate)))return {groups,loop:false,iterations:0};
+  const cap=Math.max(16,entities.length*groupNames.length*2+8);
+  const signature=(state:Memberships)=>groupNames.map(g=>`${g}:${[...state[g]].sort((a,b)=>a-b).join(',')}`).join('|');
+  const seen=new Set<string>([signature(groups)]);
   for(let pass=0;pass<cap;pass++){
     const next:Memberships=Object.fromEntries(groupNames.map(g=>[g,new Set<number>()]));
     for(const e of entities){
@@ -179,12 +181,18 @@ function resolveGroups(s:State,rules:Rule[]):Memberships{
         if(positive&&!negative)next[group].add(e.id);
       }
     }
-    if(groupNames.every(g=>next[g].size===groups[g].size&&[...next[g]].every(id=>groups[g].has(id))))return next;
+    if(groupNames.every(g=>next[g].size===groups[g].size&&[...next[g]].every(id=>groups[g].has(id))))return {groups:next,loop:false,iterations:pass+1};
+    const key=signature(next);
+    if(seen.has(key))return {groups:next,loop:true,iterations:pass+1};
+    seen.add(key);
     groups=next;
   }
-  // A cyclic negated self-definition can oscillate. Prefer the last finite
-  // approximation; original infinite-loop and parity behavior isn't claimed.
-  return groups;
+  return {groups,loop:true,iterations:cap};
+}
+function resolveGroups(s:State,rules:Rule[]):Memberships{return analyzeGroups(s,rules).groups;}
+export function groupDiagnostic(s:State,rules:Rule[]):GroupDiagnostic{
+  const {groups,loop,iterations}=analyzeGroups(s,rules);
+  return {members:Object.fromEntries(groupNames.map(g=>[g,[...groups[g]].sort((a,b)=>a-b)])),loop,iterations};
 }
 function matchesSubject(s:State,e:Entity,r:Rule,rules:Rule[],groups?:Memberships):boolean {
   const match=isGroup(r.subject)?!!groups?.[r.subject]?.has(e.id):e.kind===r.subject;
@@ -221,6 +229,8 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
   const plan=new Map<number,[number,number]>(),visiting=new Set<number>();
   const eaten=new Set<number>(),unlocked=new Set<number>(),unlockMovers=new Set<number>();
   const vacancyPushes:string[]=[];
+  // Negative synthetic IDs represent a transient vacancy, not a stored actor.
+  const virtualRoot=root.kind==='EMPTY'&&root.id<0;
   const edible=(a:Entity,b:Entity)=> a.id!==b.id && sameLayer(s,a,b,rules) && !has(s,b,'SAFE',rules) &&
     rulesFor(s,a,rules).some(r=>r.verb==='EAT'&&!r.predicateNegated&&r.predicate===b.kind)&&
     !rulesFor(s,a,rules).some(r=>r.verb==='EAT'&&r.predicateNegated&&r.predicate===b.kind);
@@ -241,8 +251,18 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
         // without a blocking property; otherwise the edge stops the chain.
         let nx=x,ny=y,found=false;
         while(inBounds(s,nx,ny)){
-          if(at(s,nx,ny).length){
-            found=at(s,nx,ny).every(obj=>!has(s,obj,'STOP',rules)&&!has(s,obj,'PUSH',rules)&&!has(s,obj,'STILL',rules));
+          const occupants=at(s,nx,ny);
+          if(occupants.length){
+            // A line of PUSH empties may push a real PUSH object toward the
+            // first non-blocking resident. Resolve the whole plan atomically.
+            found=true;
+            for(const obj of occupants){
+              if(has(s,obj,'PUSH',rules)){
+                if(!traverse(obj)){found=false;break;}
+              }else if(has(s,obj,'STOP',rules)||has(s,obj,'STILL',rules)||has(s,obj,'PULL',rules)){
+                found=false;break;
+              }
+            }
             break;
           }
           nx+=dx;ny+=dy;
@@ -280,14 +300,19 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
   for(const id of doomed)plan.delete(id);
   const swapped:Entity[]=[];
   for(const id of plan.keys()){
+    if(virtualRoot&&id===root.id)continue; // EMPTY cannot swap positions persistently
     const [x,y]=plan.get(id)!;
     for(const other of at(s,x,y))if(!plan.has(other.id)&&!doomed.has(other.id)&&has(s,other,'SWAP',rules)&&!swapped.some(e=>e.id===other.id)){
       const [ox,oy]=original.get(id)!;other.x=ox;other.y=oy;swapped.push(other);moved.add(other.id);
     }
   }
-  for(const [id,[x,y]] of plan){const obj=s.entities.find(e=>e.id===id)!;obj.x=x;obj.y=y;obj.dir=dir;moved.add(id);}
+  for(const [id,[x,y]] of plan){
+    if(virtualRoot&&id===root.id)continue;
+    const obj=s.entities.find(e=>e.id===id)!;obj.x=x;obj.y=y;obj.dir=dir;moved.add(id);
+  }
   for(const obj of swapped)events.push({phase:'movement',type:'swap',ids:[root.id,obj.id]});
-  if(plan.size)events.push({phase:'movement',type:'move',ids:[...plan.keys()],detail:dir});
+  const movedReal=[...plan.keys()].filter(id=>!(virtualRoot&&id===root.id));
+  if(movedReal.length)events.push({phase:'movement',type:virtualRoot?'empty-push-object':'move',ids:movedReal,detail:dir});
   if(doomed.size){
     const dead=s.entities.filter(e=>doomed.has(e.id));
     s.entities=s.entities.filter(e=>!doomed.has(e.id));
@@ -307,7 +332,7 @@ function commitMovement(s:State,root:Entity,dir:Direction,rules:Rule[],events:Ev
       events.push({phase:'movement',type:'pull',ids:[follower.id]});pull(fx,fy,depth+1);
     }
   }
-  for(const id of plan.keys()){const [x,y]=original.get(id)!;pull(x,y,0);}
+  for(const id of movedReal){const [x,y]=original.get(id)!;pull(x,y,0);}
   return true;
 }
 function moveStage(s:State,dir:Direction|undefined,kind:'YOU'|'MOVE'|'SHIFT',events:Event[]):void{
@@ -336,12 +361,23 @@ function moveStage(s:State,dir:Direction|undefined,kind:'YOU'|'MOVE'|'SHIFT',eve
     }
     return;
   }
-  if(kind==='YOU' && dir && rules.some(r=>r.subject==='EMPTY'&&r.verb==='IS'&&r.predicate==='YOU')){
-    const vacant=empties(s).filter(e=>has(s,e,'YOU',rules));
+  if(kind==='YOU' && dir){
+    // Each initially vacant cell has a transient chance to move; it never
+    // occupies a tile. If its destination has PUSH, the object can be pushed.
+    // Recompute membership against the live board before processing each cell.
     const [vx,vy]=vectors[dir];
+    const vacant=empties(s).filter(e=>has(s,e,'YOU',rules));
+    vacant.sort((a,b)=>(b.x*vx+b.y*vy)-(a.x*vx+a.y*vy)||a.id-b.id);
     let attempts=0;
-    for(const e of vacant)if(inBounds(s,e.x+vx,e.y+vy))attempts++;
-    if(attempts)events.push({phase:'movement',type:'empty-move',detail:`${attempts} transient vacancy moves; recalculated immediately`});
+    for(const origin of vacant){
+      if(at(s,origin.x,origin.y).length)continue;
+      if(!inBounds(s,origin.x+vx,origin.y+vy))continue;
+      const vacancy={...origin,dir};
+      if(!has(s,vacancy,'YOU',parse(s)))continue;
+      attempts++;
+      commitMovement(s,vacancy,dir,parse(s),events,moved);
+    }
+    if(attempts)events.push({phase:'movement',type:'empty-move',detail:`${attempts} transient vacancy attempts; no persistent EMPTY objects`});
   }
   let movers=s.entities.filter(e=>has(s,e,kind,rules));
   if(kind==='YOU'&&dir){const [dx,dy]=vectors[dir];movers.sort((a,b)=>(b.x*dx+b.y*dy)-(a.x*dx+a.y*dy)||a.id-b.id);}
@@ -480,26 +516,42 @@ function winCheck(s:State,events:Event[]):void{
 }
 export function step(previous:State,input:Direction|'wait'):Result {
   const s=clone(previous),events:Event[]=[];
-  if(s.status==='won')return {state:s,events,rules:parse(s)};
+  if(s.status!=='playing')return {state:s,events,rules:parse(s)};
   if(input!=='wait'&&!directions.includes(input))throw new Error('Invalid input');
+  let previousSignature='';
+  function checkpoint(label:string):boolean{
+    const active=parse(s);
+    events.push({phase:'rules',type:'reparse',detail:label});
+    const signature=JSON.stringify(active.map(r=>[r.subject,r.subjectNegated,r.verb,r.predicate,r.predicateNegated,r.conditions]));
+    if(previousSignature&&signature!==previousSignature)events.push({phase:'rules',type:'rule-change',detail:label});
+    previousSignature=signature;
+    const diagnostics=analyzeGroups(s,active);
+    if(diagnostics.loop){
+      s.status='loop';
+      events.push({phase:'rules',type:'infinite-loop',detail:`GROUP membership failed to converge after ${diagnostics.iterations} iterations (${label})`});
+      return false;
+    }
+    return true;
+  }
+  const finish=():Result=>{s.turn++;return {state:s,events,rules:parse(s)};};
+  if(!checkpoint('pre YOU'))return finish();
   if(input!=='wait')moveStage(s,input,'YOU',events);
-  events.push({phase:'rules',type:'reparse',detail:'post YOU'});
+  if(!checkpoint('post YOU'))return finish();
   moveStage(s,undefined,'MOVE',events);
-  events.push({phase:'rules',type:'reparse',detail:'post MOVE'});
+  if(!checkpoint('post MOVE'))return finish();
   moveStage(s,undefined,'SHIFT',events);
-  events.push({phase:'rules',type:'reparse',detail:'post SHIFT'});
-  events.push({phase:'rules',type:'reparse',detail:'pre transform'});
+  if(!checkpoint('post SHIFT'))return finish();
+  if(!checkpoint('pre transform'))return finish();
   transform(s,events);
-  events.push({phase:'rules',type:'reparse',detail:'post transform'});
+  if(!checkpoint('post transform'))return finish();
   teleport(s,events);
-  events.push({phase:'rules',type:'reparse',detail:'post TELE'});
+  if(!checkpoint('post TELE'))return finish();
   makeEntities(s,events);
-  events.push({phase:'rules',type:'reparse',detail:'post make'});
+  if(!checkpoint('post make'))return finish();
   interact(s,events);
-  events.push({phase:'rules',type:'reparse',detail:'post interactions'});
+  if(!checkpoint('post interactions'))return finish();
   winCheck(s,events);
-  s.turn++;
-  return {state:s,events,rules:parse(s)};
+  return finish();
 }
 export function replay(initial:State,moves:(Direction|'wait')[]):{states:State[];turns:Result[]}{
   const states=[clone(initial)],turns:Result[]=[];

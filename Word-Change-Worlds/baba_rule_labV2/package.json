@@ -1,8 +1,8 @@
 {
   "name": "words-change-worlds-engine",
-  "version": "1.5.0",
+  "version": "1.7.0",
   "private": true,
-  "description": "Rule-driven grid puzzle prototype with deterministic TypeScript core",
+  "description": "Original rule-grid puzzle project with a minimalist Canvas UI and two authored discovery puzzles",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/build.cjs",
     "test": "npm run build && node --test tests/*.test.cjs",

@@ -183,3 +183,51 @@ puzzles.push(
    ['GROUP IS',4,3],['ROCK MAKE',1,5]
  ],[['YOU',6,4],['WATER',3,6]],[{kind:'WATER',x:10,y:7}])
 );
+
+// 19 — A rule can leave a permanent consequence, even after its words are
+// re-used. Only one IS can serve both necessary sentences, at different times.
+// The standing WALL IS STOP and GRASS IS STOP statements are inaccessible.
+puzzles.push(level('19 — 借来的动词',
+  '如果一道规则不再成立，它曾经造成的变化也会消失吗？',
+  '正式谜题 · 单词复用 / 永久变形 / 时序',[
+   'ggggggggggggg',
+   'g...g...g...g',
+   'ggggggggggggg',
+   'g......#....g',
+   'g......#....g',
+   'g......#....g',
+   'g......#....g',
+   'g......#....g',
+   'g.b....#..f.g',
+   'g......#....g',
+   'ggggggggggggg'
+  ],[
+   ['WALL IS STOP',1,1],
+   ['BABA IS YOU',5,1],
+   ['GRASS IS STOP',9,1],
+   ['WALL',2,4], ['ROCK',4,4],
+   ['FLAG',2,7], ['WIN',4,7]
+  ],[['IS',3,5]]));
+
+// 20 — A single word slot is both a lifeline and the finish condition.
+// Replacing YOU with WIN deliberately removes control of BABA; only a newly
+// controlled ROCK can then reach BABA. If attempted too early, control is lost.
+puzzles.push(level('20 — 你不再是你',
+  '终点不一定是旗帜，也不一定需要你亲自抵达。',
+  '正式谜题 · 交接控制权 / 用 WIN 取代 YOU',[
+   'ggggggggggggg',
+   'g...g.......g',
+   'ggggggggggggg',
+   'g...........g',
+   'g...........g',
+   'g...........g',
+   'g...........g',
+   'g...........g',
+   'g...........g',
+   'g..b.....r..g',
+   'ggggggggggggg'
+  ],[
+   ['GRASS IS STOP',1,1],
+   ['BABA IS YOU',2,4],
+   ['ROCK IS',2,7]
+  ],[['WIN',4,5],['YOU',4,8]]));
