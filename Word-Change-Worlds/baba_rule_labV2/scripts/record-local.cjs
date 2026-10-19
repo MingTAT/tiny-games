@@ -20,7 +20,7 @@ const plans=[
 'R R D D D D D L L U R U U L U R R R R R R',
 'D D D D R D D R R R R R U L L L L L L',
 'U U R R R U U L L L U U R U U R R U U',
-'R U U U L L U U R R D D D R R R D D R R R R',
+'D L L U R R U U R U R R L D L L L U L D R R D D L U U R R R U R R R R R R R R R',
 'R U R U U L U L L L L L U'
 ];
 const map={R:'right',L:'left',D:'down',U:'up'};

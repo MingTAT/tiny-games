@@ -1,8 +1,8 @@
 {
   "name": "words-change-worlds-engine",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
-  "description": "Original rule-grid puzzle project with a minimalist Canvas UI and two authored discovery puzzles",
+  "description": "Independent movable-rule puzzle engine with challenge-19 conceptual redesign and retained Canvas art direction",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/build.cjs",
     "test": "npm run build && node --test tests/*.test.cjs",

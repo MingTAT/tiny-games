@@ -140,28 +140,31 @@ exports.puzzles.push(level('18 — 脚下的河', '你能为它创造脚下的�
     ['FLAG IS WIN', 0, 10], ['WALL IS STOP', 4, 10],
     ['GROUP IS', 4, 3], ['ROCK MAKE', 1, 5]
 ], [['YOU', 6, 4], ['WATER', 3, 6]], [{ kind: 'WATER', x: 10, y: 7 }]));
-// 19 — A rule can leave a permanent consequence, even after its words are
-// re-used. Only one IS can serve both necessary sentences, at different times.
-// The standing WALL IS STOP and GRASS IS STOP statements are inaccessible.
-exports.puzzles.push(level('19 — 借来的动词', '如果一道规则不再成立，它曾经造成的变化也会消失吗？', '正式谜题 · 单词复用 / 永久变形 / 时序', [
-    'ggggggggggggg',
-    'g...g...g...g',
-    'ggggggggggggg',
-    'g......#....g',
-    'g......#....g',
-    'g......#....g',
-    'g......#....g',
-    'g......#....g',
-    'g.b....#..f.g',
-    'g......#....g',
-    'ggggggggggggg'
+// 19 — The player must treat their own destruction as a controlled handoff.
+// The *same* OPEN word opens the first door as BABA, then the second as KEKE.
+// HAS makes death produce the only surviving controllable body. No unguarded
+// route leads to the goal, and neither door can be bypassed or pushed.
+exports.puzzles.push(level('19 — 无人之门', '两扇门看起来没有区别。', '正式谜题', [
+    '.................',
+    'ggggggggggggggggg',
+    'g...............g',
+    'g...............g',
+    'g...............g',
+    'g......#########g',
+    'g.......d..d..f.g',
+    'g......#########g',
+    'g...............g',
+    'g....b..........g',
+    'g...............g',
+    'ggggggggggggggggg',
+    '.................'
 ], [
-    ['WALL IS STOP', 1, 1],
-    ['BABA IS YOU', 5, 1],
-    ['GRASS IS STOP', 9, 1],
-    ['WALL', 2, 4], ['ROCK', 4, 4],
-    ['FLAG', 2, 7], ['WIN', 4, 7]
-], [['IS', 3, 5]]));
+    ['KEKE HAS BABA', 0, 0],
+    ['BABA IS YOU', 4, 0], ['KEKE IS YOU', 8, 0],
+    ['WALL IS STOP', 0, 12], ['DOOR IS SHUT AND STOP', 4, 12],
+    ['FLAG IS WIN', 10, 12], ['GRASS IS STOP', 14, 12],
+    ['BABA IS', 3, 6], ['BABA HAS', 1, 8]
+], [['OPEN', 5, 7], ['KEKE', 3, 9]]));
 // 20 — A single word slot is both a lifeline and the finish condition.
 // Replacing YOU with WIN deliberately removes control of BABA; only a newly
 // controlled ROCK can then reach BABA. If attempted too early, control is lost.

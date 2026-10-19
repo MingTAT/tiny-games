@@ -1,3 +1,18 @@
+# Changelog
+
+## v1.8 — Challenge 19 Rebuilt
+
+- Replaced the old 19th puzzle from scratch. No change to the praised v1.7 pixel-art Canvas style.
+- Introduced a double sealed-door corridor and destructible playable bodies, with two inheritance rules and one noun word that must change jobs at the right moment.
+- The intended route requires four independent semantic transitions, not merely finishing a nearly complete sentence.
+- Kept the hint deliberately vague and retained the victory overlay and Next Level navigation.
+- Replaced the level-19 trace (40 moves), added counterfactual and geometry tests, and verified playthrough inside Chromium.
+- 148/148 automated tests passed; desktop/mobile smoke tests passed.
+- The route is not certified shortest and the puzzle has not been blind-playtested. Level 20 is unchanged from v1.7.
+- Still 0 real-original-game empirical trace comparisons, so this is not a verified 1:1 Baba Is You re-creation.
+
+---
+
 # Changelog — v1.7 (Puzzle Edition)
 
 - Redesigned the playable UI as a minimalist, board-centered Canvas game, instead of a dashboard with cards and a sidebar.
